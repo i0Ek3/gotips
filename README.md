@@ -10,7 +10,7 @@ A buntch of Go tips.
 - 允许对值为 `nil` 的 `slice` 添加元素，但对值为 `nil` 的 `map` 添加元素时，会造成运行时 `panic`。
 - 检查 `map` 中的 `key` 是否存在，可以使用返回的第二个参数 `ok` 来判断。
 - Go 中的可变参数作为函数参数时，必须放在最后一位。
-- 想要修改 `string` 的值，需要借助 `[]byte`，修改后再转为 `string`。
+- Go 语言中的字符串是只读的，所以想要修改 `string` 的值，需要先将 `string` 转为 `[]byte` ，然后再转为 `string`。[参考](https://go.dev/play/p/o5T0H0YJfuO)
 - 两个 `nil` 是不相等的，故无法通过 `!=` 进行比较。
 - 对变量加锁后再进行复制，会将锁的状态一同复制。
 - 在单独的 `for` 循环中，`break` 可以跳出循环。但在 `for select` 中，`break` 可以跳出 `select` 块，但不会跳出 `for` 循环。如需跳出 `for` 循环，可以配合 `goto` 使用 `label` 解决。
@@ -35,7 +35,7 @@ A buntch of Go tips.
 - 在一个常量声明代码块中，如果 `iota` 没有出现在第一行，则常量的初始值就是非零值。[参考](https://go.dev/play/p/C1jHFpACuT7)
 - 只要有一个指针指向一个引用的变量，那么这个变量就不会被释放。因此，在 Go 语言中返回函数参数或临时变量是安全的。
 - 如果一个类型实现了 `String()` 方法，那么在使用 `Printf()`、`Print()`、`Println()`、`Sprintf()` 等格式化输出时，会自动使用 `String()` 方法（[参考](https://go.dev/play/p/9mYm3JTJEOJ) （[参考](https://stackoverflow.com/questions/60765066/golang-what-does-the-following-do?rq=1)））。因此，再次调用 `String()` 方法将导致递归调用。[参考 1](https://go.dev/play/p/8jOYDn0m2WY) [参考 2](https://go.dev/play/p/8jOYDn0m2WY)
-- 可变函数是指针传递。[参考](https://go.dev/play/p/apu9JTmorrp)
+- 可变长参数作为函数的参数，传递的是指针，因此在函数内部修改可变长参数会修改原数据。[参考 1](https://go.dev/play/p/apu9JTmorrp) [参考 2](https://go.dev/play/p/DFwPfMa0qvN)
 - `defer` 语句通常应该放到 `if err != nil` 后面。[参考](https://go.dev/play/p/H2nLDO9Q3za)
 - `for {}` 循环会独占 CPU 资源导致其他 Goroutine 饿死，可以通过阻塞的方式避免 CPU 占用，如使用 `select {}`。[参考](https://go.dev/play/p/VgVSO6Edb_6)
 - 如果想实现函数或者方法的链式调用，则返回该函数或者方法的指针值即可。
@@ -83,156 +83,106 @@ A buntch of Go tips.
 - `for range` 使用短变量声明 `:=` 的形式迭代变量时，变量 i、v 在每次循环中都会被重用，而不是重新声明。[参考 1](https://go.dev/play/p/pPk92ad178b) [参考 2](https://go.dev/play/p/UghIn1HZ-l1)
 - 当 `range` 表达式发生复制时，副本的指针依旧指向原底层数组，所以对切片的修改都会反应到底层数组上。[参考](https://go.dev/play/p/mDjwzkSxTt1)
 - 循环次数在循环开始前就已经确定，循环内改变切片的长度，不影响循环次数。[参考](https://go.dev/play/p/I67nM8JFsPZ)
-- Go 中不同类型时不能比较的，切片也是不能进行比较的。
+- Go 中不同类型是不能比较的，切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
 - 基于类型创建的方法必须定义在同一个包内，或者定一个该已有类型的新类型（[参考](https://go.dev/play/p/u5fYzh-7b72)）。[参考](https://go.dev/play/p/gWdbC0S_Z-d)
 - `return` 之后的 `defer` 是不能注册的。[参考](https://go.dev/play/p/IPAp4769FZc)
-- `var a []T`声明的是 `nil` 切片，不会分配内存。`a := []T{}`声明的是 `len` 和 `cap` 都为 0 的空切片，会分配内存。
+- `var a []T` 声明的是 `nil` 切片，不会分配内存。`a := []T{}` 声明的是 `len` 和 `cap` 都为 0 的空切片，会分配内存。
 - 函数参数为 `interface{}` 时可以接收任何类型的参数，包括用户自定义类型等，即使是接收指针类型也是可以的，而不是使用 `*interface{}`。[参考](https://go.dev/play/p/9Ekk_CUlYdI)
 - 永远不要使用一个指针指向一个接口类型，因为它已经是一个指针。
+- `defer` 后面的函数中如果有参数，会先缓存之前的数据到栈中，等到最后执行 `defer` 语句时再取出。[参考 1](https://go.dev/play/p/ZTrNCA8IclB) [参考 2](https://go.dev/play/p/LBr2jCRHmRU)
+- 匿名返回时，`return` 语句返回的值不会影响 `defer` 语句中的结果。
+- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。
+- 两个不同类型的数值不能相加，会编译报错。
+- 若底层数组的大小为 k，截取之后获得的切片的长度和容量的计算方法：长度：`j-i`，容量：`k-i`。[参考](https://go.dev/play/p/VRg0jygnmfq)
+- 对一个切片执行 `[i,j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
+- `init()` 函数在代码中不能被显示调用、不能被引用（赋值给函数变量），否则出现编译错误。
+- 常见的 `bool`、数值型、字符、指针、数组等类型是可以比较的，而切片、`map`、函数等是不可比较的。
+- `new` 一个对象，返回的是该对象的指针类型，不能对指针执行 append 操作。[参考](https://go.dev/play/p/8g8BLBNHH4b)
+- `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl)
+- 变量声明的简短模式必须在函数内部使用。[参考](https://go.dev/play/p/sZputp9qoSV)
+- 在函数有多个返回值时，只要有一个返回值是命名的，其他的也必须命名。如果有多个返回值，则必须加上括号 `()`；如果只有一个返回值且命名也必须加上括号 `()`。
+- `defer` 的执行顺序是后进先出。当出现 `panic` 语句的时候，会先按照 `defer` 的后进先出的顺序执行，最后才会执行 `panic`。[参考](https://go.dev/play/p/2W16mXLG3H2)
+- 结构体中的私有属性不建议增加 `JSON` 标签，因为无法解析私有属性。
+- 在未进行并发控制的代码中，如果存在多处 Go 协程，则他们的运行顺序是不确定的。[参考](https://go.dev/play/p/07mnc88nAzD)
+- 请注意代码中 `println()` 和 `fmt.Println()` 的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
+- Go 语言中中大多数数据类型都可以转化为有效的 `JSON` 文本，但 `channel`、`complex`、`func` 除外。
 
 
 
 ## 链接中的代码输出什么？有什么问题，是否需要修改？
 
 - [https://go.dev/play/p/mEsneHeNTxR](https://go.dev/play/p/mEsneHeNTxR)
-
 - [https://go.dev/play/p/R4OP-836tDo](https://go.dev/play/p/R4OP-836tDo)
-
 - [https://go.dev/play/p/1glmROGjWK5](https://go.dev/play/p/1glmROGjWK5)
-
 - [https://go.dev/play/p/wJ4nY_UIAha](https://go.dev/play/p/wJ4nY_UIAha)
-
 - [https://go.dev/play/p/zEIuT1d18k0](https://go.dev/play/p/zEIuT1d18k0)
-
 - [https://go.dev/play/p/VIicWUM7ae1](https://go.dev/play/p/VIicWUM7ae1)
-
 - [https://go.dev/play/p/BrTR1ztnNQc](https://go.dev/play/p/BrTR1ztnNQc)
-
 - [https://go.dev/play/p/8jOYDn0m2WY](https://go.dev/play/p/8jOYDn0m2WY)
-
 - [https://go.dev/play/p/XZzFXoO6gOW](https://go.dev/play/p/XZzFXoO6gOW) [参考](https://gfw.go101.org/article/line-break-rules.html)
-
 - [https://go.dev/play/p/apu9JTmorrp](https://go.dev/play/p/apu9JTmorrp)
-
 - [https://go.dev/play/p/RvfC7SdNYrQ](https://go.dev/play/p/RvfC7SdNYrQ)
-
 - [https://go.dev/play/p/pTe1wUxn73P](https://go.dev/play/p/pTe1wUxn73P)
-
 - [https://go.dev/play/p/VgVSO6Edb_6](https://go.dev/play/p/VgVSO6Edb_6)
-
 - [https://go.dev/play/p/EG2BaGmhOxb](https://go.dev/play/p/EG2BaGmhOxb)
-
 - [https://go.dev/play/p/N2XeOCcF9-k](https://go.dev/play/p/N2XeOCcF9-k)
-
 - [https://go.dev/play/p/eCIBYSVnAFa](https://go.dev/play/p/eCIBYSVnAFa)
-
 - [https://go.dev/play/p/ZfbOyRF9V5C](https://go.dev/play/p/ZfbOyRF9V5C)
-
 - [https://go.dev/play/p/r_wvQjHDO8Q](https://go.dev/play/p/r_wvQjHDO8Q)
-
 - [https://go.dev/play/p/SI7ABAfCeQp](https://go.dev/play/p/SI7ABAfCeQp)
-
 - [https://go.dev/play/p/nQYNKuLRYo9](https://go.dev/play/p/nQYNKuLRYo9)
-
 - [https://go.dev/play/p/Y9EZtxL_FZq](https://go.dev/play/p/Y9EZtxL_FZq)
-
 - [https://go.dev/play/p/T7VWzLlajuS](https://go.dev/play/p/T7VWzLlajuS)
-
 - [https://go.dev/play/p/9n-JMGhicmQ](https://go.dev/play/p/9n-JMGhicmQ)
-
 - [https://go.dev/play/p/bhPE4fqIr-D](https://go.dev/play/p/bhPE4fqIr-D)
-
 - [https://go.dev/play/p/H1Su5YAtdNu](https://go.dev/play/p/H1Su5YAtdNu)
-
 - [https://go.dev/play/p/ttoONtuoHan](https://go.dev/play/p/ttoONtuoHan)
-
 - [https://go.dev/play/p/aHKokiGjLWe](https://go.dev/play/p/aHKokiGjLWe)
-
 - [https://go.dev/play/p/9dRDxU5Rkrl](https://go.dev/play/p/9dRDxU5Rkrl)
-
 - [https://go.dev/play/p/b7t_wUoSrok](https://go.dev/play/p/b7t_wUoSrok)
-
 - [https://go.dev/play/p/qaLDSDS2Udn](https://go.dev/play/p/qaLDSDS2Udn)
-
 - [https://go.dev/play/p/L6jl8KpI2D7](https://go.dev/play/p/L6jl8KpI2D7)
-
 - [https://go.dev/play/p/Zi0Y6NijGHZ](https://go.dev/play/p/Zi0Y6NijGHZ)
-
 - [https://go.dev/play/p/tBmTMxnNiLY](https://go.dev/play/p/tBmTMxnNiLY)
-
 - [https://go.dev/play/p/SNMLaylFSR4](https://go.dev/play/p/SNMLaylFSR4)
-
 - [https://go.dev/play/p/NWhEcVpPCun](https://go.dev/play/p/NWhEcVpPCun)
-
 - [https://go.dev/play/p/EPi1Y0YTNIn](https://go.dev/play/p/EPi1Y0YTNIn)
-
 - [https://go.dev/play/p/5w635PFllaX](https://go.dev/play/p/5w635PFllaX)
-
 - [https://go.dev/play/p/GO_HnTjv8zh](https://go.dev/play/p/GO_HnTjv8zh)
-
 - [https://go.dev/play/p/Ui-VB7OVGOl](https://go.dev/play/p/Ui-VB7OVGOl)
-
 - [https://go.dev/play/p/kBEEWF7IQ3U](https://go.dev/play/p/kBEEWF7IQ3U)
-
 - [https://go.dev/play/p/djK-lxKDrmJ](https://go.dev/play/p/djK-lxKDrmJ)
-
 - [https://go.dev/play/p/ZZqUsVaZsK5](https://go.dev/play/p/ZZqUsVaZsK5)
-
 - [https://go.dev/play/p/pAlMBeSuZJA](https://go.dev/play/p/pAlMBeSuZJA)
-
 - [https://go.dev/play/p/lunSEku2gYj](https://go.dev/play/p/lunSEku2gYj)
-
 - [https://go.dev/play/p/QJsQbZrtY40](https://go.dev/play/p/QJsQbZrtY40)
-
 - [https://go.dev/play/p/NnGkzIPWDeD](https://go.dev/play/p/NnGkzIPWDeD)
-
 - [https://go.dev/play/p/mDjwzkSxTt1](https://go.dev/play/p/mDjwzkSxTt1), [https://go.dev/play/p/bk8DSR66qhY](https://go.dev/play/p/bk8DSR66qhY)
-
 - [https://go.dev/play/p/Hd63R-qvHu3](https://go.dev/play/p/Hd63R-qvHu3)
-
 - [https://go.dev/play/p/QV7VndMJMnD](https://go.dev/play/p/QV7VndMJMnD)
-
 - [https://go.dev/play/p/9mYm3JTJEOJ](https://go.dev/play/p/9mYm3JTJEOJ)
-
-- [https://go.dev/play/p/nUQa15qss8h](https://go.dev/play/p/nUQa15qss8h) [参考](https://studygolang.com/articles/2192)
-
+- [https://go.dev/play/p/nUQa15qss8h](https://go.dev/play/p/nUQa15qss8h) [参考](https://studygolang.com/articles/2192)，[https://go.dev/play/p/mF68pVqwkef](https://go.dev/play/p/mF68pVqwkef) [参考](https://www.cnblogs.com/zsy/p/5370052.html)
 - [https://go.dev/play/p/sSYx1mfw39Q](https://go.dev/play/p/sSYx1mfw39Q)
-
 - [https://go.dev/play/p/lITM1Im27Ku](https://go.dev/play/p/lITM1Im27Ku)
-
 - [https://go.dev/play/p/BotqJKnBsAO](https://go.dev/play/p/BotqJKnBsAO)
-
 - [https://go.dev/play/p/89_i3Ok5SNq](https://go.dev/play/p/89_i3Ok5SNq)
-
 - [https://go.dev/play/p/cyDqT8bHWLM](https://go.dev/play/p/cyDqT8bHWLM)
-
 - [https://go.dev/play/p/IPAp4769FZc](https://go.dev/play/p/IPAp4769FZc)
-
 - [https://go.dev/play/p/9Ekk_CUlYdI](https://go.dev/play/p/9Ekk_CUlYdI)
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-- []()
-
-  
-
-
+- [https://go.dev/play/p/ZTrNCA8IclB](https://go.dev/play/p/ZTrNCA8IclB)
+- [https://go.dev/play/p/U8uxJSPKvX8](https://go.dev/play/p/U8uxJSPKvX8)
+- [https://go.dev/play/p/MeYz3uOBK2q](https://go.dev/play/p/MeYz3uOBK2q)
+- [https://go.dev/play/p/BvX2peasJFH](https://go.dev/play/p/BvX2peasJFH)
+- [https://go.dev/play/p/R9AWJZ5IjYc](https://go.dev/play/p/R9AWJZ5IjYc)
+- [https://go.dev/play/p/D-cg3rQBXwn](https://go.dev/play/p/D-cg3rQBXwn)
+- [https://go.dev/play/p/BU7laja7fUZ](https://go.dev/play/p/BU7laja7fUZ)
+- [https://go.dev/play/p/5K4PleVWWyF](https://go.dev/play/p/5K4PleVWWyF)
+- [https://go.dev/play/p/HKocxqqxC8j](https://go.dev/play/p/HKocxqqxC8j)
+- [https://go.dev/play/p/xNfMW9cTt1l](https://go.dev/play/p/xNfMW9cTt1l)
+- [https://go.dev/play/p/i_Ui_qyHKXt](https://go.dev/play/p/i_Ui_qyHKXt)
+- [https://go.dev/play/p/XxdVf-Scapj](https://go.dev/play/p/XxdVf-Scapj)
+- [https://go.dev/play/p/piMplCrSZCb](https://go.dev/play/p/piMplCrSZCb)
+- [https://go.dev/play/p/IqyT5hIrm-m](https://go.dev/play/p/IqyT5hIrm-m)
 
 
 
