@@ -21,9 +21,10 @@ A buntch of Go tips.
 - 使用值类型接收者定义的方法，调用的时候，使用的是值的副本，对副本操作不会影响原来的值。如果想要在调用函数中修改原来的值，可以使用指针接收者定义的方法。
 - 不管接收者类型是值类型还是指针类型，都可以通过值类型或指针类型调用。
 - 实现了接收者是值类型的方法，相当于自动实现了接收者是指针类型的方法；而实现了接收者是指针类型的方法，不会自动生成对应接收者是值类型的方法。
-- 
 - 类型转换、类型断言本质上都是把一个类型转换成另外一个，但类型断言是对接口变量进行的操作。
-- 如何检测类型是否实现了接口，可添加类似如下的代码：`var _ interface = (*Writer)(nil)`或者`var _ interface = Writer{}`。
+- 如何检测某个类型是否实现了接口？
+  - `var _ interface_name = (*type_name)(nil)`检测`*type_name`类型是否实现了`interface_name`接口
+  - `var _ interface_name = type_name{}`检测`type_name`类型是否实现了`interface_name`接口
 - `iface`和`eface`都是 Go 中描述接口的底层结构体，区别在于`iface`描述的接口包含方法，而`eface`描述的接口是不包含任何方法的空接口（`interface{}`）。
 - 在函数调用里修改返回的切片，将会影响到原切片。通常我们新建一个切片，然后将修改后的结果复制到该新切片，而不是改变旧有切片。
 - Go 语言中不存在引用变量，每个变量都占用一个唯一的内存位置。
@@ -107,6 +108,7 @@ A buntch of Go tips.
 - 在未进行并发控制的代码中，如果存在多处 Go 协程，则他们的运行顺序是不确定的。[参考](https://go.dev/play/p/07mnc88nAzD)
 - 请注意代码中`println()`和`fmt.Println()`的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
 - Go 语言中大多数数据类型都可以转化为有效的`JSON`文本，但`channel`、`complex`、`func`不行。
+- 将小整数转换为接口值不再需要进行内存分配(小整数是指 0 到 255 之间的数)。因此，一般来说接口意味着必须在堆中动态分配。
 
 ## 链接中的代码输出什么？有什么问题，是否需要修改？
 
@@ -184,6 +186,12 @@ A buntch of Go tips.
 - [https://go.dev/play/p/XxdVf-Scapj](https://go.dev/play/p/XxdVf-Scapj)
 - [https://go.dev/play/p/piMplCrSZCb](https://go.dev/play/p/piMplCrSZCb)
 - [https://go.dev/play/p/IqyT5hIrm-m](https://go.dev/play/p/IqyT5hIrm-m)
+
+## ## TODO
+
+- [ ]  split content into different topics
+
+- [ ]  detach code validations into each tips
 
 ## Reference
 
