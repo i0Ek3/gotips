@@ -19,41 +19,27 @@ A buntch of Go tips.
 ### 2. defer
 
 - `defer` 函数的参数（包括接收者）是在 `defer` 语句出现的位置做计算的，而不是在函数执行的时候计算的。即 `defer` 后面的函数如果带参数，会优先计算参数，并将结果存储在栈中，等到真正执行 `defer` 时取出。[参考 1](https://go.dev/play/p/9n-JMGhicmQ) [参考 2](https://go.dev/play/p/r_wvQjHDO8Q) [参考 3](https://go.dev/play/p/ZTrNCA8IclB) [参考 4](https://go.dev/play/p/LBr2jCRHmRU)
-
 - `return` 会先于 `defer` 返回，且 `return` 不是原子操作（`return` 语句分为赋值和返回两个部分）。因此，在有名返回函数中，一定要注意 `return` 语句。
-
 - `defer` 语句在前，且包含 `recovery()` 时，当遇到 `panic` 程序将停止执行，然后调用 `defer` 函数。[参考](https://go.dev/play/p/pTe1wUxn73P)
-
 - 当代码中不包含 `recovery()` 时，出现 `panic` 语句的时候，会先按照 `defer` 后进先出的顺序执行，最后才会执行 `panic`。[参考](https://go.dev/play/p/2W16mXLG3H2)
-
 - `recover()` 必须在 `defer` 函数中直接调用才会生效。
-
 - `return` 之后的 `defer` 是不能注册的。[参考](https://go.dev/play/p/IPAp4769FZc)
-
 - `defer` 语句通常应该放到 `if err != nil` 后面。[参考](https://go.dev/play/p/H2nLDO9Q3za)
-
 - 匿名返回时，`return` 语句返回的值不会影响 `defer` 语句中的结果。
+- 不要在 `for` 循环中使用 `defer`。
 
 ### 3. loop
 
-- 善用 `switch` 而不是多个 `if`。
-
+- 善用 `switch` 而不是多个 `if`，且 `switch` 中必须要有 `default` 子句。
 - 在单独的 `for` 循环中，`break` 可以跳出循环。但在 `for select` 中，`break` 可以跳出 `select` 块，但不会跳出 `for` 循环。如需跳出 `for` 循环，可以配合 `goto` 使用 `label` 解决。
-
 - `for {}` 循环会独占 CPU 资源导致其他 Goroutine 饿死，可以通过阻塞的方式避免 CPU 占用，如使用 `select {}`。[参考](https://go.dev/play/p/VgVSO6Edb_6)
-
-- `goto` 无法跳转到其他函数或者内层代码。[参考](https://go.dev/play/p/miz2pGthALx)
-
+- `goto` 无法跳转到其他函数或者内层代码，禁止在业务代码中使用。[参考](https://go.dev/play/p/miz2pGthALx)
 - `select` 会随机选择一个可用通道做收发操作，而不是按顺序进行。[参考](https://go.dev/play/p/5tsektd4No-)
-
+- `for range` 中如果只需要第一项（key），则丢弃第二个，如 `for key := range nums`。如果需要第二项（value），则第一项用下划线表示，如 `for _, val := range nums`。
 - 当使用 `for range` 遍历切片时，若只有一个参数，如 `for v := range x`，则 v 表示索引；若有两个参数，第二个参数才表示具体的值。[参考](https://go.dev/play/p/Zdu4XlgJLUI)
-
 - `for range` 使用短变量声明 `:=` 的形式迭代变量时，变量 i、v 在每次循环中都会被重用，而不是重新声明。[参考 1](https://go.dev/play/p/pPk92ad178b) [参考 2](https://go.dev/play/p/UghIn1HZ-l1)
-
 - 当 `range` 表达式发生复制时，副本的指针依旧指向原底层数组，所以对切片的修改都会反应到底层数组上。[参考](https://go.dev/play/p/mDjwzkSxTt1)
-
 - `for range` 中获取到的值是元素的副本，不会复制底层数组。[参考](https://go.dev/play/p/-YYOfIFYF2v)
-
 - 循环次数在循环开始前就已经确定，循环内改变切片的长度，不影响循环次数。[参考](https://go.dev/play/p/I67nM8JFsPZ)
 
 ### 4. string
@@ -71,24 +57,18 @@ A buntch of Go tips.
 ### 6. array & slice
 
 - 在函数调用里修改返回的切片，将会影响到原切片。通常我们新建一个切片，然后将修改后的结果复制到该新切片，而不是改变旧有切片。
-
 - 在拷贝切片时，`copy(dst, src)` 函数返回 `len(dst)`、`len(src)` 之间的最小值。如果想要将 src 完全拷贝至 dst，必须给 dst 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
-
 - 截取符号 `sl[i:j]`，如果 j 省略，默认是截取到原切片或者数组的长度，若 `j > len(sl)`，则 `panic`。[参考](https://go.dev/play/p/_CCiGbYAkZA)
-
 - 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。[参考](https://go.dev/play/p/X5l5_6rBTQx)
-
 - 使用 `make` 初始化切片时，需要补充 `len` 参数，`cap` 参数可选，否则无法编译。[参考](https://go.dev/play/p/xrKuOwRCQiU)
-
 - 若底层数组的大小为 k，截取之后获得的切片的长度和容量分别为：`len = j-i`，`cap = k-i`。[参考](https://go.dev/play/p/VRg0jygnmfq)
-
 - 对一个切片执行 `[i,j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
-
 - `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl)
+- 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式。
 
 ### 7. map
 
-- `map` 是线程不安全的，可以通过 `sync.RWMutex` 加锁或者使用线程安全的 `sync.Map` 来解决。
+- `map` 是线程不安全的，在并发中需要加锁，可以通过 `sync.RWMutex` 加锁或者使用线程安全的 `sync.Map` 来解决。
 
 - `map[key]struct` 中 `struct` 是不可寻址的，因此无法直接赋值。若想知道 `struct` 中的地址，可以考虑使用临时变量（[参考](https://go.dev/play/p/l5dIxdOHpn5)）或者修改数据结构（[参考](https://go.dev/play/p/0-0Xr_ytXUt)）。[参考](https://go.dev/play/p/tNum3CIxW7l)
 
@@ -105,22 +85,19 @@ A buntch of Go tips.
 ### 8. channel
 
 - 使用 `chan struct{}` 来传递信号，尽量避免使用 `chan bool`。
-
 - 无法关闭接收用的 `channel`，但可以关闭发送用的 `channel`。[参考](https://go.dev/play/p/sh0pUfwN5fy)
-
 - 读、写一个 `nil channel` 会造成永久阻塞；向已经关闭的 `channel` 发送数据，会造成 `panic`；从一个已经关闭的 `channel` 接收数据，如果缓冲区为空，则返回一个零值，否则读取出对应的值；关闭一个已经关闭的 `channel` 会 `panic`。[参考](https://go.dev/play/p/h7NnRmXbtEA)
+- 如果要对一个 `channel` 进行遍历，遍历后记得 `close`，不然会发生死锁。 
 
 ### 9. func
 
+- 函数参数不宜过长，应控制在 5 个以内。
 - Go 中的可变参数作为函数参数时，必须放在最后一位。
-
 - 函数只能与 `nil` 比较。[参考](https://go.dev/play/p/_vtECkR00ZZ)
-
 - 可变长参数作为函数的参数，传递的是指针，因此在函数内部修改可变长参数会修改原数据。[参考 1](https://go.dev/play/p/apu9JTmorrp) [参考 2](https://go.dev/play/p/NnGkzIPWDeD)
-
 - 如果想实现函数或者方法的链式调用，则返回该函数或者方法的指针值即可。
-
 - 在函数有多个返回值时，只要有一个返回值是命名的，其他的也必须命名。如果有多个返回值，则必须加上括号 `()`；如果只有一个返回值且命名也必须加上括号 `()`。
+- 在函数中，不要传递引用类型（`map, slice, chan, interface`）的指针。
 
 ### 10. method
 
@@ -165,10 +142,10 @@ A buntch of Go tips.
 ### 12. struct
 
 - 可在结构体中添加 `_ struct{}` 字段以防止结构体字段使用纯值方式初始化。
-
 - 结构体中的私有属性不建议增加 `JSON` 标签，因为无法解析。
-
 - 无法为函数返回的结构体中的字段赋值。[参考](https://go.dev/play/p/qaLDSDS2Udn)
+- 空结构体 `struct{}` 实例不占据任何的内存空间。
+- 使用 `&T{}` 代替 `new(T)`。
 
 ### 13. goroutine
 
@@ -189,6 +166,8 @@ A buntch of Go tips.
 - 对变量加锁后再进行复制，会将锁的状态一同复制。
 
 - 将 `Mutex` 作为匿名字段时，相关的方法必须使用指针接收者，否则会导致锁机制失效。也可以通过嵌入 `*Mutex` 来避免复制的问题，但需要初始化。[参考](https://go.dev/play/p/iL0qUgiiggH)
+
+- 读写锁的存在是为了解决读多写少时的性能问题，读场景较多时，读写锁可有效地减少锁阻塞的时间。
 
 ### 16. init
 
@@ -241,51 +220,43 @@ A buntch of Go tips.
 
 - 常量组中如不指定类型和初始化值，则与上一行非空常量右值相同。[参考](https://go.dev/play/p/mkBzT7ttBfv)
 
-### 22. msic
+### 22. misc
 
 - Go 中仅有值传递。
-
 - Go 中不同类型是不能比较的，切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
-
 - 类型转换、类型断言本质上都是把一个类型转换成另外一个，但类型断言是对接口变量进行的操作。
-
 - Go 语言中不存在引用变量，每个变量都占用一个唯一的内存位置。
-
 - Go 中的预定义标识符（如 `string`、`len` 等）是可以作为变量使用的，但关键字不行（如 `default`）。
-
 - 两个不同类型的数值不能相加，否则会编译报错。
-
 - 用字面量初始化数组、`slice` 和 `map` 时，最好是在每个元素后面加上逗号。[参考](https://go.dev/play/p/D9v3aFCTRL0)
-
 - `cap()` 函数适用于数组、数组指针、`slice` 和 `channel`，不适用于 `map`，可以使用 `len()` 返回 `map` 的元素个数。当使用 `make` 创建 `map` 变量时指定第二个参数会被忽略。
-
 - 如果有未使用的变量，代码将编译失败，但可以有未使用的全局变量。另外，函数的参数未使用也是可以的。当然，如无必要，可以注释掉或者移除未使用的变量。[参考](https://go.dev/play/p/xYxO9jOJNYg)
-
 - Go 语言中，大括号不能放在单独的一行，否则会编译错误。
-
 - Go 中存在断行规则，请在 `;` 之后断行。[参考](https://gfw.go101.org/article/line-break-rules.html)
-
 - 常见的 `bool`、数值型、字符、指针、数组等类型是可以比较的，而切片、`map`、函数等是不可比较的。
-
 - 请注意代码中 `println()` 和 `fmt.Println()` 的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
-
 - Go 语言中大多数数据类型都可以转化为有效的 `JSON` 文本，但 `channel`、`complex`、`func` 不行。[参考](https://go.dev/play/p/EPi1Y0YTNIn)
+
+### 23. Other
+
+- 使用 `gofmt` 对代码进行格式化，使用 `goimports` 对 import 部分格式化，且运算符与操作数之间留有一个空格。
+- 根据团队习惯，可将主要代码中的一行长度控制在 80-120 字符之间，超出的部分可以换行。文件长度最好不要超过 800 行，函数长度最好不要超过 80 行，否则考虑重构。
 
 ## TODO
 
 - [x] split content into different topics
-
 - [x] detach code validations into each tips
-
-- [ ] add remaining topics code examples
+- [x] add remaining topics code examples
 
 ## Reference
 
 - [https://golang.design/go-questions/](https://golang.design/go-questions/)
+- [https://geektutu.com/post/high-performance-go.html](https://geektutu.com/post/high-performance-go.html)
 - [https://gfw.go101.org/article/101.html](https://gfw.go101.org/article/101.html)
 - [https://mp.weixin.qq.com/s/rEXhrAqEOg9Ja4wYomOsGw](https://mp.weixin.qq.com/s/rEXhrAqEOg9Ja4wYomOsGw)
 - [https://www.practical-go-lessons.com](https://www.practical-go-lessons.com)
 - [https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/](https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/)
+- [https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw](https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw)
 
 ## Credit
 

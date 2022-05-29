@@ -53,8 +53,17 @@ func test3() {
 	}
 }
 
+func test4() {
+    ch := make(chan int)
+    for i := range ch {
+        ch <- i
+    }
+    close(ch)
+}
+
 func main() {
 	test1()
 	test2()
 	test3()
+    test4()
 }

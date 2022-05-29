@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+    "unsafe"
 )
 
 func test1() {
@@ -29,6 +30,11 @@ func test1() {
 	}
 }
 
+func test2() {
+    fmt.Println(unsafe.Sizeof(struct{}{}))
+}
+
 func main() {
 	test1()
+    test2()
 }
