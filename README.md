@@ -2,6 +2,33 @@
 
 A buntch of Go tips.
 
+## Content
+
+- [1 nil](https://github.com/i0Ek3/gotips#1-nil)
+- [2 defer](https://github.com/i0Ek3/gotips#2-defer)
+- [3 loop](https://github.com/i0Ek3/gotips#3-loop)
+- [4 string](https://github.com/i0Ek3/gotips#4-string)
+- [5 byte & rune](https://github.com/i0Ek3/gotips#5-byte--rune)
+- [6 array & slice](https://github.com/i0Ek3/gotips#6-array--slice)
+- [7 map](https://github.com/i0Ek3/gotips#7-map)
+- [8 channel](https://github.com/i0Ek3/gotips#8-channel)
+- [9 func](https://github.com/i0Ek3/gotips#9-func)
+- [10 method](https://github.com/i0Ek3/gotips#10-method)
+- [11 interface](https://github.com/i0Ek3/gotips#11-interface)
+- [12 struct](https://github.com/i0Ek3/gotips#12-struct)
+- [13 goroutine](https://github.com/i0Ek3/gotips#13-goroutine)
+- [14 context](https://github.com/i0Ek3/gotips#14-context)
+- [15 lock](https://github.com/i0Ek3/gotips#15-lock)
+- [16 init](https://github.com/i0Ek3/gotips#16-init)
+- [17 itoa](https://github.com/i0Ek3/gotips#17-itoa)
+- [18 assign](https://github.com/i0Ek3/gotips#18-assign)
+- [19 pointer](https://github.com/i0Ek3/gotips#19-pointer)
+- [20 operator](https://github.com/i0Ek3/gotips#20-operator)
+- [21 constant](https://github.com/i0Ek3/gotips#21-constant)
+- [22 misc](https://github.com/i0Ek3/gotips#22-misc)
+- [23 other](https://github.com/i0Ek3/gotips#23-other)
+
+
 ## Tips
 
 > Classification Rule: determine the corresponding topic according to the subject in the tips.
@@ -178,7 +205,7 @@ A buntch of Go tips.
 
 - 在一个常量声明代码块中，如果 `iota` 没有出现在第一行，则常量的初始值就是非零值（即对应的行数）。[参考 1](https://go.dev/play/p/C1jHFpACuT7) [参考 2]()https://studygolang.com/articles/2192
 
-### 18. assign `:=`
+### 18. assign
 
 - 在同一个作用域中，多次声明同一个变量名，后声明的变量仅在当前作用域生效。
 
@@ -242,11 +269,6 @@ A buntch of Go tips.
 - 使用 `gofmt` 对代码进行格式化，使用 `goimports` 对 import 部分格式化，且运算符与操作数之间留有一个空格。
 - 根据团队习惯，可将主要代码中的一行长度控制在 80-120 字符之间，超出的部分可以换行。文件长度最好不要超过 800 行，函数长度最好不要超过 80 行，否则考虑重构。
 
-## TODO
-
-- [x] split content into different topics
-- [x] detach code validations into each tips
-- [x] add remaining topics code examples
 
 ## Reference
 
@@ -257,6 +279,7 @@ A buntch of Go tips.
 - [https://www.practical-go-lessons.com](https://www.practical-go-lessons.com)
 - [https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/](https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/)
 - [https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw](https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw)
+
 
 ## Credit
 
