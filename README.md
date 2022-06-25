@@ -25,8 +25,9 @@ A buntch of Go tips.
 - [19 pointer](https://github.com/i0Ek3/gotips#19-pointer)
 - [20 operator](https://github.com/i0Ek3/gotips#20-operator)
 - [21 constant](https://github.com/i0Ek3/gotips#21-constant)
-- [22 misc](https://github.com/i0Ek3/gotips#22-misc)
-- [23 other](https://github.com/i0Ek3/gotips#23-other)
+- [22 error](https://github.com/i0Ek3/gotips#22-error)
+- [23 misc](https://github.com/i0Ek3/gotips#23-misc)
+- [24 other](https://github.com/i0Ek3/gotips#24-other)
 
 
 ## Tips
@@ -53,7 +54,7 @@ A buntch of Go tips.
 - `return` 之后的 `defer` 是不能注册的。[参考](https://go.dev/play/p/IPAp4769FZc)
 - `defer` 语句通常应该放到 `if err != nil` 后面。[参考](https://go.dev/play/p/H2nLDO9Q3za)
 - 匿名返回时，`return` 语句返回的值不会影响 `defer` 语句中的结果。
-- 不要在 `for` 循环中使用 `defer`。
+- 不要在 `for` 循环中使用 `defer`，因为 `defer` 只有在函数退出时才会执行。
 
 ### 3. loop
 
@@ -72,10 +73,9 @@ A buntch of Go tips.
 ### 4. string
 
 - Go 语言中的字符串是只读的，所以想要修改 `string` 的值，需要先将 `string` 转为 `[]byte`，然后再转为 `string`。[参考](https://go.dev/play/p/o5T0H0YJfuO)
-
 - Go 的字符串类型是不能赋值为 `nil` 的，也不能跟 `nil` 比较。[参考](https://go.dev/play/p/7B7wbztcwlr)
-
 - 如果一个类型实现了 `String()` 方法，那么在使用 `fmt.Printf()`、`fmt.Print()`、`fmt.Println()`、`fmt.Sprintf()` 等格式化输出方法时，会自动使用 `String()` 方法（[参考](https://go.dev/play/p/9mYm3JTJEOJ) （[参考](https://stackoverflow.com/questions/60765066/golang-what-does-the-following-do?rq=1)））。因此，再次调用 `String()` 方法将导致递归调用。[参考](https://go.dev/play/p/8jOYDn0m2WY)
+- 空字符串的判断应使用 `if len(s) == 0` 而不是 `if s == ""`。
 
 ### 5. byte & rune
 
@@ -87,11 +87,11 @@ A buntch of Go tips.
 - 在拷贝切片时，`copy(dst, src)` 函数返回 `len(dst)`、`len(src)` 之间的最小值。如果想要将 src 完全拷贝至 dst，必须给 dst 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
 - 截取符号 `sl[i:j]`，如果 j 省略，默认是截取到原切片或者数组的长度，若 `j > len(sl)`，则 `panic`。[参考](https://go.dev/play/p/_CCiGbYAkZA)
 - 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。[参考](https://go.dev/play/p/X5l5_6rBTQx)
-- 使用 `make` 初始化切片时，需要补充 `len` 参数，`cap` 参数可选，否则无法编译。[参考](https://go.dev/play/p/xrKuOwRCQiU)
+- 使用 `make` 初始化切片时，需要补充 `len` 参数，`cap` 参数可选，否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
 - 若底层数组的大小为 k，截取之后获得的切片的长度和容量分别为：`len = j-i`，`cap = k-i`。[参考](https://go.dev/play/p/VRg0jygnmfq)
 - 对一个切片执行 `[i,j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
 - `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl)
-- 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式。
+- 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式而不是 `if len(slice) == 0`。
 
 ### 7. map
 
@@ -173,6 +173,7 @@ A buntch of Go tips.
 - 无法为函数返回的结构体中的字段赋值。[参考](https://go.dev/play/p/qaLDSDS2Udn)
 - 空结构体 `struct{}` 实例不占据任何的内存空间。
 - 使用 `&T{}` 代替 `new(T)`。
+- 嵌入式类型应位于结构体内字段列表的顶部，且必须有一个空行将嵌入式字段与常规字段分隔开。
 
 ### 13. goroutine
 
@@ -247,7 +248,12 @@ A buntch of Go tips.
 
 - 常量组中如不指定类型和初始化值，则与上一行非空常量右值相同。[参考](https://go.dev/play/p/mkBzT7ttBfv)
 
-### 22. misc
+### 22. error
+
+- `error` 作为函数的返回值，必须要对其进行处理，或者赋值给 `_`。
+- `error` 作为函数的多个返回值之一，必须是最后一个参数。
+
+### 23. misc
 
 - Go 中仅有值传递。
 - Go 中不同类型是不能比较的，切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
@@ -264,10 +270,13 @@ A buntch of Go tips.
 - 请注意代码中 `println()` 和 `fmt.Println()` 的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
 - Go 语言中大多数数据类型都可以转化为有效的 `JSON` 文本，但 `channel`、`complex`、`func` 不行。[参考](https://go.dev/play/p/EPi1Y0YTNIn)
 
-### 23. Other
+### 24. Other
 
 - 使用 `gofmt` 对代码进行格式化，使用 `goimports` 对 import 部分格式化，且运算符与操作数之间留有一个空格。
+- 优先使用 `strconv` 而不是 `fmt`。
 - 根据团队习惯，可将主要代码中的一行长度控制在 80-120 字符之间，超出的部分可以换行。文件长度最好不要超过 800 行，函数长度最好不要超过 80 行，否则考虑重构。
+- 包名全部小写，不允许有大写或者下划线；项目名可以使用中划线连接多个单词；函数名要采用驼峰式；文件名要小写，并使用下划线分隔单词；结构体的命名要用驼峰式，且使用名词而不是动词；接口命名规则与结构体命名规则基本一致，单个函数的接口使用 “er” 结尾，两个函数以两个函数名命名，三个以上类似于结构体名。
+- 每个可导出的命名都要有注释，禁止使用多行注释，注释掉的代码在提交前应该删除，否则说明不删的理由和后续处理建议，多段注释之间使用空格进行分隔。
 
 
 ## Reference
