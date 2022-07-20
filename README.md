@@ -29,7 +29,6 @@ A buntch of Go tips.
 - [23 misc](https://github.com/i0Ek3/gotips#23-misc)
 - [24 other](https://github.com/i0Ek3/gotips#24-other)
 
-
 ## Tips
 
 > Classification Rule: determine the corresponding topic according to the subject in the tips.
@@ -76,6 +75,7 @@ A buntch of Go tips.
 - Go 的字符串类型是不能赋值为 `nil` 的，也不能跟 `nil` 比较。[参考](https://go.dev/play/p/7B7wbztcwlr)
 - 如果一个类型实现了 `String()` 方法，那么在使用 `fmt.Printf()`、`fmt.Print()`、`fmt.Println()`、`fmt.Sprintf()` 等格式化输出方法时，会自动使用 `String()` 方法（[参考](https://go.dev/play/p/9mYm3JTJEOJ) （[参考](https://stackoverflow.com/questions/60765066/golang-what-does-the-following-do?rq=1)））。因此，再次调用 `String()` 方法将导致递归调用。[参考](https://go.dev/play/p/8jOYDn0m2WY)
 - 空字符串的判断应使用 `if len(s) == 0` 而不是 `if s == ""`。
+- 尽量使用 `string.Builder` 进行字符串的拼接。
 
 ### 5. byte & rune
 
@@ -87,10 +87,10 @@ A buntch of Go tips.
 - 在拷贝切片时，`copy(dst, src)` 函数返回 `len(dst)`、`len(src)` 之间的最小值。如果想要将 src 完全拷贝至 dst，必须给 dst 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
 - 截取符号 `sl[i:j]`，如果 j 省略，默认是截取到原切片或者数组的长度，若 `j > len(sl)`，则 `panic`。[参考](https://go.dev/play/p/_CCiGbYAkZA)
 - 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。[参考](https://go.dev/play/p/X5l5_6rBTQx)
-- 使用 `make` 初始化切片时，需要补充 `len` 参数，`cap` 参数可选，否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
+- 使用 `make` 初始化切片时，需要补充 `len` 参数（`cap` 参数可选），否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
 - 若底层数组的大小为 k，截取之后获得的切片的长度和容量分别为：`len = j-i`，`cap = k-i`。[参考](https://go.dev/play/p/VRg0jygnmfq)
 - 对一个切片执行 `[i,j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
-- `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl)
+- `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl) 另外，尽量不要在复制时使用 `append()`，如在合并多个 slice 的时候。
 - 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式而不是 `if len(slice) == 0`。
 
 ### 7. map
@@ -105,9 +105,11 @@ A buntch of Go tips.
 
 - `map` 不是线程安全的，在查找、赋值、遍历、删除 `map` 的过程中都会检测写标志，一旦发现写标志置位（等于1），则直接 `panic`。
 
-- 检查 `map` 中的 `key` 是否存在，可以使用返回的第二个参数 `ok` 来判断。
+- 检查 `map` 中的 `key` 是否存在，可以使用返回的第二个参数 `ok` 来判断，如 `v, ok := map["hi"]` 中的 v 会返回 "hi" 在 map 中对应的值，如果 "hi" 不存在，则返回对应类型的零值，ok 会返回 "hi" 是否存在于 map 中。
 
-- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。
+- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。‘
+
+- 尽量不要在 `map` 的键和值中使用指针，这样可以减少 GC 的开销。另外，字符串也是指针，若想要在 `map` 中使用，尽量使用 `[]byte` 而不是 `string`。
 
 ### 8. channel
 
@@ -174,6 +176,8 @@ A buntch of Go tips.
 - 空结构体 `struct{}` 实例不占据任何的内存空间。
 - 使用 `&T{}` 代替 `new(T)`。
 - 嵌入式类型应位于结构体内字段列表的顶部，且必须有一个空行将嵌入式字段与常规字段分隔开。
+- Go 中结构体里的成员变量最好要全部大写。
+- 尽量避免复制较大（超过四个字段）的 struct，我们可以通过内存对齐来减小 struct 的大小。
 
 ### 13. goroutine
 
@@ -181,7 +185,7 @@ A buntch of Go tips.
 
 ### 14. context
 
-- 不要将 `context` 塞到结构体里。直接将 `context` 类型作为函数的第一参数，而且一般都命名为 ctx。
+- 不要将 `context` 放到结构体中，而是直接将 `context` 类型作为函数的第一参数，并且命名为 ctx。
 
 - 不要向函数传入一个 `nil` 的 `context`，如果你实在不知道传什么，标准库给你准备好了一个 `context：TODO`。
 
@@ -252,6 +256,7 @@ A buntch of Go tips.
 
 - `error` 作为函数的返回值，必须要对其进行处理，或者赋值给 `_`。
 - `error` 作为函数的多个返回值之一，必须是最后一个参数。
+- `error` 字符串不应该大写开头或者在末尾加上标点符号。
 
 ### 23. misc
 
@@ -278,9 +283,9 @@ A buntch of Go tips.
 - 包名全部小写，不允许有大写或者下划线；项目名可以使用中划线连接多个单词；函数名要采用驼峰式；文件名要小写，并使用下划线分隔单词；结构体的命名要用驼峰式，且使用名词而不是动词；接口命名规则与结构体命名规则基本一致，单个函数的接口使用 “er” 结尾，两个函数以两个函数名命名，三个以上类似于结构体名。
 - 每个可导出的命名都要有注释，禁止使用多行注释，注释掉的代码在提交前应该删除，否则说明不删的理由和后续处理建议，多段注释之间使用空格进行分隔。
 
-
 ## Reference
 
+- [https://dave.cheney.net/practical-go/presentations/qcon-china.html](https://dave.cheney.net/practical-go/presentations/qcon-china.html)
 - [https://golang.design/go-questions/](https://golang.design/go-questions/)
 - [https://geektutu.com/post/high-performance-go.html](https://geektutu.com/post/high-performance-go.html)
 - [https://gfw.go101.org/article/101.html](https://gfw.go101.org/article/101.html)
@@ -288,7 +293,7 @@ A buntch of Go tips.
 - [https://www.practical-go-lessons.com](https://www.practical-go-lessons.com)
 - [https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/](https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/)
 - [https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw](https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw)
-
+- [https://medium.com/scum-gazeta/golang-simple-optimization-notes-70bc64673980](https://medium.com/scum-gazeta/golang-simple-optimization-notes-70bc64673980)
 
 ## Credit
 
