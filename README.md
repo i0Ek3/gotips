@@ -46,35 +46,57 @@ A buntch of Go tips.
 ### 2. defer
 
 - `defer` 函数的参数（包括接收者）是在 `defer` 语句出现的位置做计算的，而不是在函数执行的时候计算的。即 `defer` 后面的函数如果带参数，会优先计算参数，并将结果存储在栈中，等到真正执行 `defer` 时取出。[参考 1](https://go.dev/play/p/9n-JMGhicmQ) [参考 2](https://go.dev/play/p/r_wvQjHDO8Q) [参考 3](https://go.dev/play/p/ZTrNCA8IclB) [参考 4](https://go.dev/play/p/LBr2jCRHmRU)
+
 - `return` 会先于 `defer` 返回，且 `return` 不是原子操作（`return` 语句分为赋值和返回两个部分）。因此，在有名返回函数中，一定要注意 `return` 语句。
+
 - `defer` 语句在前，且包含 `recovery()` 时，当遇到 `panic` 程序将停止执行，然后调用 `defer` 函数。[参考](https://go.dev/play/p/pTe1wUxn73P)
+
 - 当代码中不包含 `recovery()` 时，出现 `panic` 语句的时候，会先按照 `defer` 后进先出的顺序执行，最后才会执行 `panic`。[参考](https://go.dev/play/p/2W16mXLG3H2)
+
 - `recover()` 必须在 `defer` 函数中直接调用才会生效。
+
 - `return` 之后的 `defer` 是不能注册的。[参考](https://go.dev/play/p/IPAp4769FZc)
+
 - `defer` 语句通常应该放到 `if err != nil` 后面。[参考](https://go.dev/play/p/H2nLDO9Q3za)
+
 - 匿名返回时，`return` 语句返回的值不会影响 `defer` 语句中的结果。
+
 - 不要在 `for` 循环中使用 `defer`，因为 `defer` 只有在函数退出时才会执行。
 
 ### 3. loop
 
 - 善用 `switch` 而不是多个 `if`，且 `switch` 中必须要有 `default` 子句。
+
 - 在单独的 `for` 循环中，`break` 可以跳出循环。但在 `for select` 中，`break` 可以跳出 `select` 块，但不会跳出 `for` 循环。如需跳出 `for` 循环，可以配合 `goto` 使用 `label` 解决。
+
 - `for {}` 循环会独占 CPU 资源导致其他 Goroutine 饿死，可以通过阻塞的方式避免 CPU 占用，如使用 `select {}`。[参考](https://go.dev/play/p/VgVSO6Edb_6)
+
 - `goto` 无法跳转到其他函数或者内层代码，禁止在业务代码中使用。[参考](https://go.dev/play/p/miz2pGthALx)
+
 - `select` 会随机选择一个可用通道做收发操作，而不是按顺序进行。[参考](https://go.dev/play/p/5tsektd4No-)
+
 - `for range` 中如果只需要第一项（key），则丢弃第二个，如 `for key := range nums`。如果需要第二项（value），则第一项用下划线表示，如 `for _, val := range nums`。
+
 - 当使用 `for range` 遍历切片时，若只有一个参数，如 `for v := range x`，则 v 表示索引；若有两个参数，第二个参数才表示具体的值。[参考](https://go.dev/play/p/Zdu4XlgJLUI)
+
 - `for range` 使用短变量声明 `:=` 的形式迭代变量时，变量 i、v 在每次循环中都会被重用，而不是重新声明。[参考 1](https://go.dev/play/p/pPk92ad178b) [参考 2](https://go.dev/play/p/UghIn1HZ-l1)
+
 - 当 `range` 表达式发生复制时，副本的指针依旧指向原底层数组，所以对切片的修改都会反应到底层数组上。[参考](https://go.dev/play/p/mDjwzkSxTt1)
+
 - `for range` 中获取到的值是元素的副本，不会复制底层数组。[参考](https://go.dev/play/p/-YYOfIFYF2v)
+
 - 循环次数在循环开始前就已经确定，循环内改变切片的长度，不影响循环次数。[参考](https://go.dev/play/p/I67nM8JFsPZ)
 
 ### 4. string
 
 - Go 语言中的字符串是只读的，所以想要修改 `string` 的值，需要先将 `string` 转为 `[]byte`，然后再转为 `string`。[参考](https://go.dev/play/p/o5T0H0YJfuO)
+
 - Go 的字符串类型是不能赋值为 `nil` 的，也不能跟 `nil` 比较。[参考](https://go.dev/play/p/7B7wbztcwlr)
+
 - 如果一个类型实现了 `String()` 方法，那么在使用 `fmt.Printf()`、`fmt.Print()`、`fmt.Println()`、`fmt.Sprintf()` 等格式化输出方法时，会自动使用 `String()` 方法（[参考](https://go.dev/play/p/9mYm3JTJEOJ) （[参考](https://stackoverflow.com/questions/60765066/golang-what-does-the-following-do?rq=1)））。因此，再次调用 `String()` 方法将导致递归调用。[参考](https://go.dev/play/p/8jOYDn0m2WY)
+
 - 空字符串的判断应使用 `if len(s) == 0` 而不是 `if s == ""`。
+
 - 尽量使用 `string.Builder` 进行字符串的拼接。
 
 ### 5. byte & rune
@@ -84,13 +106,21 @@ A buntch of Go tips.
 ### 6. array & slice
 
 - 在函数调用里修改返回的切片，将会影响到原切片。通常我们新建一个切片，然后将修改后的结果复制到该新切片，而不是改变旧有切片。
+
 - 在拷贝切片时，`copy(dst, src)` 函数返回 `len(dst)`、`len(src)` 之间的最小值。如果想要将 src 完全拷贝至 dst，必须给 dst 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
+
 - 截取符号 `sl[i:j]`，如果 j 省略，默认是截取到原切片或者数组的长度，若 `j > len(sl)`，则 `panic`。[参考](https://go.dev/play/p/_CCiGbYAkZA)
+
 - 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。[参考](https://go.dev/play/p/X5l5_6rBTQx)
+
 - 使用 `make` 初始化切片时，需要补充 `len` 参数（`cap` 参数可选），否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
+
 - 若底层数组的大小为 k，截取之后获得的切片的长度和容量分别为：`len = j-i`，`cap = k-i`。[参考](https://go.dev/play/p/VRg0jygnmfq)
+
 - 对一个切片执行 `[i,j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
+
 - `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl) 另外，尽量不要在复制时使用 `append()`，如在合并多个 slice 的时候。
+
 - 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式而不是 `if len(slice) == 0`。
 
 ### 7. map
@@ -107,34 +137,41 @@ A buntch of Go tips.
 
 - 检查 `map` 中的 `key` 是否存在，可以使用返回的第二个参数 `ok` 来判断，如 `v, ok := map["hi"]` 中的 v 会返回 "hi" 在 map 中对应的值，如果 "hi" 不存在，则返回对应类型的零值，ok 会返回 "hi" 是否存在于 map 中。
 
-- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。‘
+- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。
 
 - 尽量不要在 `map` 的键和值中使用指针，这样可以减少 GC 的开销。另外，字符串也是指针，若想要在 `map` 中使用，尽量使用 `[]byte` 而不是 `string`。
 
 ### 8. channel
 
 - 使用 `chan struct{}` 来传递信号，尽量避免使用 `chan bool`。
+
 - 无法关闭接收用的 `channel`，但可以关闭发送用的 `channel`。[参考](https://go.dev/play/p/sh0pUfwN5fy)
+
 - 读、写一个 `nil channel` 会造成永久阻塞；向已经关闭的 `channel` 发送数据，会造成 `panic`；从一个已经关闭的 `channel` 接收数据，如果缓冲区为空，则返回一个零值，否则读取出对应的值；关闭一个已经关闭的 `channel` 会 `panic`。[参考](https://go.dev/play/p/h7NnRmXbtEA)
+
 - 如果要对一个 `channel` 进行遍历，遍历后记得 `close`，不然会发生死锁。 
 
 ### 9. func
 
 - 函数参数不宜过长，应控制在 5 个以内。
+
 - Go 中的可变参数作为函数参数时，必须放在最后一位。
+
 - 函数只能与 `nil` 比较。[参考](https://go.dev/play/p/_vtECkR00ZZ)
+
 - 可变长参数作为函数的参数，传递的是指针，因此在函数内部修改可变长参数会修改原数据。[参考 1](https://go.dev/play/p/apu9JTmorrp) [参考 2](https://go.dev/play/p/NnGkzIPWDeD)
+
 - 如果想实现函数或者方法的链式调用，则返回该函数或者方法的指针值即可。
+
 - 在函数有多个返回值时，只要有一个返回值是命名的，其他的也必须命名。如果有多个返回值，则必须加上括号 `()`；如果只有一个返回值且命名也必须加上括号 `()`。
+
 - 在函数中，不要传递引用类型（`map, slice, chan, interface`）的指针。
 
 ### 10. method
 
 - 使用值类型接收者定义的方法，调用的时候，使用的是值的副本，对副本操作不会影响原来的值。如果想要在调用函数中修改原来的值，可以使用指针接收者定义的方法。
 
-- 不管接收者类型是值类型还是指针类型，都可以通过值类型或指针类型调用。[参考](https://go.dev/play/p/mEsneHeNTxR)
-
-- 实现了接收者是值类型的方法，相当于自动实现了接收者是指针类型的方法；而实现了接收者是指针类型的方法，不会自动生成对应接收者是值类型的方法。[参考](https://go.dev/play/p/L6jl8KpI2D7)
+- 实现了接收者是值类型的方法，相当于自动实现了接收者是指针类型的方法；而实现了接收者是指针类型的方法，不会自动生成对应接收者是值类型的方法。[参考](https://go.dev/play/p/L6jl8KpI2D7) [参考](https://go.dev/play/p/mEsneHeNTxR)
 
 - 当使用 `type` 声明一个新类型时，它不会继承原有类型的方法集。
 
@@ -171,12 +208,19 @@ A buntch of Go tips.
 ### 12. struct
 
 - 可在结构体中添加 `_ struct{}` 字段以防止结构体字段使用纯值方式初始化。
+
 - 结构体中的私有属性不建议增加 `JSON` 标签，因为无法解析。
+
 - 无法为函数返回的结构体中的字段赋值。[参考](https://go.dev/play/p/qaLDSDS2Udn)
+
 - 空结构体 `struct{}` 实例不占据任何的内存空间。
+
 - 使用 `&T{}` 代替 `new(T)`。
+
 - 嵌入式类型应位于结构体内字段列表的顶部，且必须有一个空行将嵌入式字段与常规字段分隔开。
+
 - Go 中结构体里的成员变量最好要全部大写。
+
 - 尽量避免复制较大（超过四个字段）的 struct，我们可以通过内存对齐来减小 struct 的大小。
 
 ### 13. goroutine
@@ -204,11 +248,12 @@ A buntch of Go tips.
 ### 16. init
 
 - `init()` 函数不能被其他函数调用，包括 `main()` 函数，它总是第一个执行。
+
 - `init()` 函数在代码中不能被显示调用、不能被引用（赋值给函数变量），否则出现编译错误。
 
 ### 17. itoa
 
-- 在一个常量声明代码块中，如果 `iota` 没有出现在第一行，则常量的初始值就是非零值（即对应的行数）。[参考 1](https://go.dev/play/p/C1jHFpACuT7) [参考 2]()https://studygolang.com/articles/2192
+- 在一个常量声明代码块中，如果 `iota` 没有出现在第一行，则常量的初始值就是非零值（即对应的行数）。[参考](https://go.dev/play/p/C1jHFpACuT7) [参考](https://studygolang.com/articles/2192)
 
 ### 18. assign
 
@@ -255,44 +300,71 @@ A buntch of Go tips.
 ### 22. error
 
 - `error` 作为函数的返回值，必须要对其进行处理，或者赋值给 `_`。
+
 - `error` 作为函数的多个返回值之一，必须是最后一个参数。
+
 - `error` 字符串不应该大写开头或者在末尾加上标点符号。
 
 ### 23. misc
 
 - Go 中仅有值传递。
+
 - Go 中不同类型是不能比较的，切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
+
 - 类型转换、类型断言本质上都是把一个类型转换成另外一个，但类型断言是对接口变量进行的操作。
+
 - Go 语言中不存在引用变量，每个变量都占用一个唯一的内存位置。
+
 - Go 中的预定义标识符（如 `string`、`len` 等）是可以作为变量使用的，但关键字不行（如 `default`）。
+
 - 两个不同类型的数值不能相加，否则会编译报错。
+
 - 用字面量初始化数组、`slice` 和 `map` 时，最好是在每个元素后面加上逗号。[参考](https://go.dev/play/p/D9v3aFCTRL0)
+
 - `cap()` 函数适用于数组、数组指针、`slice` 和 `channel`，不适用于 `map`，可以使用 `len()` 返回 `map` 的元素个数。当使用 `make` 创建 `map` 变量时指定第二个参数会被忽略。
+
 - 如果有未使用的变量，代码将编译失败，但可以有未使用的全局变量。另外，函数的参数未使用也是可以的。当然，如无必要，可以注释掉或者移除未使用的变量。[参考](https://go.dev/play/p/xYxO9jOJNYg)
+
 - Go 语言中，大括号不能放在单独的一行，否则会编译错误。
+
 - Go 中存在断行规则，请在 `;` 之后断行。[参考](https://gfw.go101.org/article/line-break-rules.html)
+
 - 常见的 `bool`、数值型、字符、指针、数组等类型是可以比较的，而切片、`map`、函数等是不可比较的。
+
 - 请注意代码中 `println()` 和 `fmt.Println()` 的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
+
 - Go 语言中大多数数据类型都可以转化为有效的 `JSON` 文本，但 `channel`、`complex`、`func` 不行。[参考](https://go.dev/play/p/EPi1Y0YTNIn)
 
 ### 24. Other
 
 - 使用 `gofmt` 对代码进行格式化，使用 `goimports` 对 import 部分格式化，且运算符与操作数之间留有一个空格。
+
 - 优先使用 `strconv` 而不是 `fmt`。
+
 - 根据团队习惯，可将主要代码中的一行长度控制在 80-120 字符之间，超出的部分可以换行。文件长度最好不要超过 800 行，函数长度最好不要超过 80 行，否则考虑重构。
+
 - 包名全部小写，不允许有大写或者下划线；项目名可以使用中划线连接多个单词；函数名要采用驼峰式；文件名要小写，并使用下划线分隔单词；结构体的命名要用驼峰式，且使用名词而不是动词；接口命名规则与结构体命名规则基本一致，单个函数的接口使用 “er” 结尾，两个函数以两个函数名命名，三个以上类似于结构体名。
+
 - 每个可导出的命名都要有注释，禁止使用多行注释，注释掉的代码在提交前应该删除，否则说明不删的理由和后续处理建议，多段注释之间使用空格进行分隔。
 
 ## Reference
 
 - [https://dave.cheney.net/practical-go/presentations/qcon-china.html](https://dave.cheney.net/practical-go/presentations/qcon-china.html)
+
 - [https://golang.design/go-questions/](https://golang.design/go-questions/)
+
 - [https://geektutu.com/post/high-performance-go.html](https://geektutu.com/post/high-performance-go.html)
+
 - [https://gfw.go101.org/article/101.html](https://gfw.go101.org/article/101.html)
+
 - [https://mp.weixin.qq.com/s/rEXhrAqEOg9Ja4wYomOsGw](https://mp.weixin.qq.com/s/rEXhrAqEOg9Ja4wYomOsGw)
+
 - [https://www.practical-go-lessons.com](https://www.practical-go-lessons.com)
+
 - [https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/](https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/)
+
 - [https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw](https://mp.weixin.qq.com/s/QONfbKioFf6VqJE2OwP7Kw)
+
 - [https://medium.com/scum-gazeta/golang-simple-optimization-notes-70bc64673980](https://medium.com/scum-gazeta/golang-simple-optimization-notes-70bc64673980)
 
 ## Credit
