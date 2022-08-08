@@ -49,9 +49,9 @@ A buntch of Go tips.
 
 - `return` 会先于 `defer` 返回，且 `return` 不是原子操作（`return` 语句分为赋值和返回两个部分）。因此，在有名返回函数中，一定要注意 `return` 语句。
 
-- `defer` 语句在前，且包含 `recovery()` 时，当遇到 `panic` 程序将停止执行，然后调用 `defer` 函数。[参考](https://go.dev/play/p/pTe1wUxn73P)
+- `defer` 语句在前，且包含 `recover()` 时，当遇到 `panic` 程序将停止执行，然后调用 `defer` 函数。[参考](https://go.dev/play/p/pTe1wUxn73P)
 
-- 当代码中不包含 `recovery()` 时，出现 `panic` 语句的时候，会先按照 `defer` 后进先出的顺序执行，最后才会执行 `panic`。[参考](https://go.dev/play/p/2W16mXLG3H2)
+- 当代码中不包含 `recover()` 时，出现 `panic` 语句的时候，会先按照 `defer` 后进先出的顺序执行，最后才会执行 `panic`。[参考](https://go.dev/play/p/2W16mXLG3H2)
 
 - `recover()` 必须在 `defer` 函数中直接调用才会生效。
 
@@ -101,7 +101,8 @@ A buntch of Go tips.
 
 ### 5. byte & rune
 
-- `byte` 是 `uint8` 的别名，大小为一字节，代表 ASCII 码的一个字符。`rune` 是 `int32` 的别名，大小为四字节，代表一个 UTF-8 字符。当需要处理中文、日文或者其他复合字符时，则需用到 `rune` 类型。
+- `byte` 是 `uint8` 的别名，大小为一字节，代表 ASCII 码的一个字符。
+- `rune` 是 `int32` 的别名，大小为四字节，代表一个 UTF-8 字符。当需要处理中文、日文或者其他复合字符时，则需用到 `rune` 类型。
 
 ### 6. array & slice
 
@@ -115,9 +116,9 @@ A buntch of Go tips.
 
 - 使用 `make` 初始化切片时，需要补充 `len` 参数（`cap` 参数可选），否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
 
-- 若底层数组的大小为 k，截取之后获得的切片的长度和容量分别为：`len = j-i`，`cap = k-i`。[参考](https://go.dev/play/p/VRg0jygnmfq)
+- 若底层数组的大小为 k，通过 `[beg:end]` 的方式截取之后获得的切片的长度和容量分别为：`len = end-beg`，`cap = k-beg`。[参考](https://go.dev/play/p/rcYqGuvoVxL)
 
-- 对一个切片执行 `[i,j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
+- 对一个切片执行 `[i:j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
 
 - `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl) 另外，尽量不要在复制时使用 `append()`，如在合并多个 slice 的时候。
 
@@ -289,7 +290,7 @@ A buntch of Go tips.
 
 - `&^` 为按位置零。表达式 `z = x &^ y` 表示为如果 y 中的 bit 位为 1，则 z 对应的 bit 位为 0，否则 z 对应 bit 位等于 x 中相应的 bit 位的值。
 
-- `|` 为或操作符。表达式 `z = x | y` 表示为如果 y 中的 bit 位为 1，则 z 对应 bit 位为 1，否则 z 对应 bit 位等于 x 中相应的 bit 位的值，与 `&^` 操作相反。
+- `|` 为或操作符。表达式 `z = x | y` 表示为如果 y 中的 bit 位为 1，则 z 对应 bit 位为 1，否则 z 对应 bit 位等于 x 中相应的 bit 位的值。
 
 ### 21. constant
 
