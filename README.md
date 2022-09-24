@@ -63,6 +63,8 @@ A buntch of Go tips.
 
 - 不要在 `for` 循环中使用 `defer`，因为 `defer` 只有在函数退出时才会执行。
 
+- 对性能要求较高时，应避免使用 `defer Unlock()`。
+
 ### 3. loop
 
 - 善用 `switch` 而不是多个 `if`，且 `switch` 中必须要有 `default` 子句。
@@ -150,7 +152,11 @@ A buntch of Go tips.
 
 - 读、写一个 `nil channel` 会造成永久阻塞；向已经关闭的 `channel` 发送数据，会造成 `panic`；从一个已经关闭的 `channel` 接收数据，如果缓冲区为空，则返回一个零值，否则读取出对应的值；关闭一个已经关闭的 `channel` 会 `panic`。[参考](https://go.dev/play/p/h7NnRmXbtEA)
 
-- 如果要对一个 `channel` 进行遍历，遍历后记得 `close`，不然会发生死锁。 
+- 及时用 `close` 函数关闭通道，否则可能会导致死锁。
+
+- 不能在单向通道上做逆向操作，也不能用 `close` 函数关闭接收端。
+
+- `select` 语句会随机选择一个可用通道做收发操作，如要等全部通道消息处理结束(closed)，可将已完成通道设置为 `nil`，这样它就会被阻塞，不再被 `select` 选中。当所有通道都不可用时，`select` 会执行 `default` 语句，避开 `select` 阻塞，也可用 `default` 处理一些默认逻辑。
 
 ### 9. func
 
