@@ -1,6 +1,6 @@
 # gotips
 
-A buntch of Go tips.
+A bunch tips for Go.
 
 ## Content
 
@@ -39,7 +39,7 @@ A buntch of Go tips.
 
 - `nil` 切片（`var s []T`）和空切片（`s := make([]T, 0)` 或者 `s := []T{}`）是不同的切片，前者不会分配内存，而后者会分配内存。[参考](https://stackoverflow.com/questions/59349879/whats-the-difference-between-int-and-int-in-go)
 
-- `nil` 用于表示 `interface`、`func`、`map`、`slice` 和 `channel` 的零值。如果不指定变量的类型，编译器将无法得出变量的具体类型，导致编译错误。[参考 1](https://go.dev/play/p/3M-DfjOP-Vr) [参考 2](https://go.dev/play/p/Gp0wBvdndWs)
+- `nil` 只能赋值给指针、`chan`、`func`、`interface`、`map`、`slice` 等类型的变量。如果不指定变量的类型，编译器将无法得出变量的具体类型，导致编译错误。[参考 1](https://go.dev/play/p/3M-DfjOP-Vr) [参考 2](https://go.dev/play/p/Gp0wBvdndWs)
 
 - 允许对值为 `nil` 的 `slice` 添加元素，但对值为 `nil` 的 `map` 添加元素时，会造成运行时 `panic`。[参考 1](https://go.dev/play/p/L_cYqV84DrN) [参考 2](https://go.dev/play/p/kfjcbO74u4Z)
 
@@ -103,45 +103,30 @@ A buntch of Go tips.
 
 ### 5. byte & rune
 
-- `byte` 是 `uint8` 的别名，大小为一字节，代表 ASCII 码的一个字符。
-- `rune` 是 `int32` 的别名，大小为四字节，代表一个 UTF-8 字符。当需要处理中文、日文或者其他复合字符时，则需用到 `rune` 类型。
+- `byte` 是 `uint8` 的别名，大小为 1 字节，代表 ASCII 码的一个字符。
+- `rune` 是 `int32` 的别名，大小为 4 字节，代表一个 UTF-8 字符。当需要处理中文、日文或者其他复合字符时，则需用到 `rune` 类型。
 
 ### 6. array & slice
 
 - 在函数调用里修改返回的切片，将会影响到原切片。通常我们新建一个切片，然后将修改后的结果复制到该新切片，而不是改变旧有切片。
-
 - 在拷贝切片时，`copy(dst, src)` 函数返回 `len(dst)`、`len(src)` 之间的最小值。如果想要将 src 完全拷贝至 dst，必须给 dst 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
-
 - 截取符号 `sl[i:j]`，如果 j 省略，默认是截取到原切片或者数组的长度，若 `j > len(sl)`，则 `panic`。[参考](https://go.dev/play/p/_CCiGbYAkZA)
-
-- 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。[参考](https://go.dev/play/p/X5l5_6rBTQx)
-
-- 使用 `make` 初始化切片时，需要补充 `len` 参数（`cap` 参数可选），否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
-
 - 若底层数组的大小为 k，通过 `[beg:end]` 的方式截取之后获得的切片的长度和容量分别为：`len = end-beg`，`cap = k-beg`。[参考](https://go.dev/play/p/rcYqGuvoVxL)
-
 - 对一个切片执行 `[i:j]` 的时候，i 和 j 都不能超过切片的长度值。[参考](https://go.dev/play/p/IdcK7zMJqOu)
-
+- 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。[参考](https://go.dev/play/p/X5l5_6rBTQx)
+- 使用 `make` 初始化切片时，需要补充 `len` 参数（`cap` 参数可选），否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
 - `append()` 的第二个参数不能直接使用 `slice`，需使用 `…` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl) 另外，尽量不要在复制时使用 `append()`，如在合并多个 slice 的时候。
-
 - 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式而不是 `if len(slice) == 0`。
+- 对切片截取后赋值给新的切片，则对新切片的修改会影响原来的切片，因为这两个切片共享同一个底层数组。而追加会新建一个切片，不会影响原有切片。[参考](https://go.dev/play/p/X3KouQ5K_Yv)
 
 ### 7. map
 
-- `map` 是线程不安全的，在并发中需要加锁，可以通过 `sync.RWMutex` 加锁或者使用线程安全的 `sync.Map` 来解决。
-
+- `map` 是线程不安全的，在并发中需要加锁，可以通过 `sync.RWMutex` 加锁或者使用线程安全的 `sync.Map` 来解决。同理，在查找、赋值、遍历、删除 `map` 的过程中都会检测写标志，一旦发现写标志置位（等于1），则直接 `panic`。
 - `map[key]struct` 中 `struct` 是不可寻址的，因此无法直接赋值。若想知道 `struct` 中的地址，可以考虑使用临时变量（[参考](https://go.dev/play/p/l5dIxdOHpn5)）或者修改数据结构（[参考](https://go.dev/play/p/0-0Xr_ytXUt)）。[参考](https://go.dev/play/p/tNum3CIxW7l)
-
 - `map` 必须初始化才能使用，且无法对 `map` 的 key 和 value 进行取地址，否则将无法编译。[参考](https://go.dev/play/p/1glmROGjWK5)
-
-- 两个 `map` 无法直接进行比较，只能是遍历 `map` 的每个元素，比较元素是否都深度相同。[参考](https://play.golang.com/p/bVT7Iynj4mG)
-
-- `map` 不是线程安全的，在查找、赋值、遍历、删除 `map` 的过程中都会检测写标志，一旦发现写标志置位（等于1），则直接 `panic`。
-
+- 两个 `map` 是无法直接进行比较的，只能通过遍历 `map` 的每个元素，比较元素是否都深度相同。[参考](https://play.golang.com/p/bVT7Iynj4mG)
 - 检查 `map` 中的 `key` 是否存在，可以使用返回的第二个参数 `ok` 来判断，如 `v, ok := map["hi"]` 中的 v 会返回 "hi" 在 map 中对应的值，如果 "hi" 不存在，则返回对应类型的零值，ok 会返回 "hi" 是否存在于 map 中。
-
-- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。
-
+- 删除 `map` 中不存在的键值对时，不会报错，相当于没有任何作用；获取、打印 `map` 中不存在的键值对时，返回对应类型的零值。[参考](https://go.dev/play/p/bYzDU1bPN7v)
 - 尽量不要在 `map` 的键和值中使用指针，这样可以减少 GC 的开销。另外，字符串也是指针，若想要在 `map` 中使用，尽量使用 `[]byte` 而不是 `string`。
 
 ### 8. channel
@@ -152,7 +137,7 @@ A buntch of Go tips.
 
 - 读、写一个 `nil channel` 会造成永久阻塞；向已经关闭的 `channel` 发送数据，会造成 `panic`；从一个已经关闭的 `channel` 接收数据，如果缓冲区为空，则返回一个零值，否则读取出对应的值；关闭一个已经关闭的 `channel` 会 `panic`。[参考](https://go.dev/play/p/h7NnRmXbtEA)
 
-- 及时用 `close` 函数关闭通道，否则可能会导致死锁。
+- 及时用 `close()` 关闭通道，否则可能会导致死锁。如在 `for-range` 循环中遍历 `chan` 中的值时。
 
 - 不能在单向通道上做逆向操作，也不能用 `close` 函数关闭接收端。
 
@@ -160,11 +145,9 @@ A buntch of Go tips.
 
 ### 9. func
 
-- 函数参数不宜过长，应控制在 5 个以内。
-
 - Go 中的可变参数作为函数参数时，必须放在最后一位。
 
-- 函数只能与 `nil` 比较。[参考](https://go.dev/play/p/_vtECkR00ZZ)
+- 函数只能与 `nil` 比较。[参考 1](https://go.dev/play/p/_vtECkR00ZZ) [参考 2](https://go.dev/play/p/lVSTjlMlLMR)
 
 - 可变长参数作为函数的参数，传递的是指针，因此在函数内部修改可变长参数会修改原数据。[参考 1](https://go.dev/play/p/apu9JTmorrp) [参考 2](https://go.dev/play/p/NnGkzIPWDeD)
 
@@ -177,23 +160,14 @@ A buntch of Go tips.
 ### 10. method
 
 - 使用值类型接收者定义的方法，调用的时候，使用的是值的副本，对副本操作不会影响原来的值。如果想要在调用函数中修改原来的值，可以使用指针接收者定义的方法。
-
-- 实现了接收者是值类型的方法，相当于自动实现了接收者是指针类型的方法；而实现了接收者是指针类型的方法，不会自动生成对应接收者是值类型的方法。[参考](https://go.dev/play/p/L6jl8KpI2D7) [参考](https://go.dev/play/p/mEsneHeNTxR)
-
-- 当使用 `type` 声明一个新类型时，它不会继承原有类型的方法集。
-
-- 非命名类型（`unamed type`，如 `struct{}`、`[]string`、`interface{}`、`map[string]bool` 等）不能作为方法的接收者。[参考](https://go.dev/play/p/Xbdnni_JasU)
-
+- **实现了接收者是值类型的方法，相当于自动实现了接收者是指针类型的方法；而实现了接收者是指针类型的方法，不会自动生成对应接收者是值类型的方法**。[参考 1](https://go.dev/play/p/L6jl8KpI2D7) [参考 2](https://go.dev/play/p/mEsneHeNTxR)
 - 类型 `T` 的方法集是包含值类型接收者 `T` 的一组方法；类型 `*T` 的方法集是包含值类型接收者 `T` 和指针类型接收者 `*T` 的一组方法。
-
+- 当使用 `type` 声明一个新类型时，它不会继承原有类型的方法集。
+- 非命名类型（`unamed type`，如 `struct{}`、`[]string`、`interface{}`、`map[string]bool` 等）不能作为方法的接收者。[参考](https://go.dev/play/p/Xbdnni_JasU)
 - 当目标方法的接收者是指针类型时，那么被复制的就是指针。[参考](https://go.dev/play/p/ttoONtuoHan)
-
 - 当指针值赋值给变量或者作为函数参数传递时，会立即计算并复制该方法执行所需的接收者对象并与其绑定，以便在稍后执行时能隐式传入接收者参数。[参考](https://go.dev/play/p/-n9RfLyVWVX)
-
 - 在方法中，指针类型的接收者必须是合法指针（包括 `nil`），或者能够获取到实例地址的表达式。[参考](https://go.dev/play/p/kW1kZeZMWBF)
-
 - 不可寻址的结构体不能调用带结构体指针接收者的方法。[参考](https://go.dev/play/p/2ZWdotuYAy_2)
-
 - 基于类型创建的方法必须定义在同一个包内，或者定义该类型的一个新类型（[参考](https://go.dev/play/p/u5fYzh-7b72)）。[参考](https://go.dev/play/p/gWdbC0S_Z-d)
 
 ### 11. interface
@@ -212,6 +186,8 @@ A buntch of Go tips.
 
 - 将小整数转换为接口值不再需要进行内存分配(小整数是指 0 到 255 之间的数)。因此，一般来说接口意味着必须在堆中动态分配。
 
+- 仅有接口类型的变量才能使用类型断言。[参考](https://go.dev/play/p/dGLVU2XEz5R)
+
 ### 12. struct
 
 - 可在结构体中添加 `_ struct{}` 字段以防止结构体字段使用纯值方式初始化。
@@ -224,11 +200,13 @@ A buntch of Go tips.
 
 - 使用 `&T{}` 代替 `new(T)`。
 
+- 两个结构体在内部字段类型和字段顺序以及类型都为可比较类型时，才可以用 `==` 和 `!=` 进行比较。
+
 - 嵌入式类型应位于结构体内字段列表的顶部，且必须有一个空行将嵌入式字段与常规字段分隔开。
 
 - Go 中结构体里的成员变量最好要全部大写。
 
-- 尽量避免复制较大（超过四个字段）的 struct，我们可以通过内存对齐来减小 struct 的大小。
+- 尽量避免复制较大（超过 4 个字段）的 struct，我们可以通过内存对齐来减小 struct 的大小。
 
 ### 13. goroutine
 
@@ -260,13 +238,13 @@ A buntch of Go tips.
 
 ### 17. itoa
 
-- 在一个常量声明代码块中，如果 `iota` 没有出现在第一行，则常量的初始值就是非零值（即对应的行数）。[参考](https://go.dev/play/p/C1jHFpACuT7) [参考](https://studygolang.com/articles/2192)
+- 在一个常量声明代码块中，如果 `iota` 没有出现在第一行，则常量的初始值就是非零值（即对应的行数）。[参考 1](https://go.dev/play/p/eR5v-srspmq) [参考 2](https://studygolang.com/articles/2192)
 
 ### 18. assign
 
 - 在同一个作用域中，多次声明同一个变量名，后声明的变量仅在当前作用域生效。
 
-- 不同类型的值是不能相互赋值的，即使底层类型一样。对于底层类型相同的变量可以相互赋值的一个重要条件是，至少有一个变量不是有名类型（`named type`，如内置类型和用 `type` 声明的类型）。
+- 不同类型的值是不能相互赋值的，即使底层类型一样。对于底层类型相同的变量可以相互赋值的一个重要条件是，至少有一个变量不是有名类型（`named type`，如内置类型和用 `type` 声明的类型）。[参考](https://go.dev/play/p/Dc6b2Ee5cPs)
 
 - 多重赋值分为两个步骤：先分别计算等号左边的表达式和等号右边的表达式，然后再将右边的值赋值给左边。[参考](https://go.dev/play/p/bhPE4fqIr-D)
 
@@ -315,44 +293,57 @@ A buntch of Go tips.
 ### 23. misc
 
 - Go 中仅有值传递。
-
-- Go 中不同类型是不能比较的，切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
-
+- `%+d` 表示输出数值的符号。[参考](https://go.dev/play/p/MJjQAexpHV7)
+- 两个不同类型的数值不能相加，否则会编译报错。[参考](https://go.dev/play/p/DehdvmqOjtc)
+- Go 中不同类型是不能比较的（比如长度不同的两个数组），切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
 - 类型转换、类型断言本质上都是把一个类型转换成另外一个，但类型断言是对接口变量进行的操作。
-
 - Go 语言中不存在引用变量，每个变量都占用一个唯一的内存位置。
-
 - Go 中的预定义标识符（如 `string`、`len` 等）是可以作为变量使用的，但关键字不行（如 `default`）。
-
-- 两个不同类型的数值不能相加，否则会编译报错。
-
 - 用字面量初始化数组、`slice` 和 `map` 时，最好是在每个元素后面加上逗号。[参考](https://go.dev/play/p/D9v3aFCTRL0)
-
 - `cap()` 函数适用于数组、数组指针、`slice` 和 `channel`，不适用于 `map`，可以使用 `len()` 返回 `map` 的元素个数。当使用 `make` 创建 `map` 变量时指定第二个参数会被忽略。
-
 - 如果有未使用的变量，代码将编译失败，但可以有未使用的全局变量。另外，函数的参数未使用也是可以的。当然，如无必要，可以注释掉或者移除未使用的变量。[参考](https://go.dev/play/p/xYxO9jOJNYg)
-
 - Go 语言中，大括号不能放在单独的一行，否则会编译错误。
-
 - Go 中存在断行规则，请在 `;` 之后断行。[参考](https://gfw.go101.org/article/line-break-rules.html)
-
 - 常见的 `bool`、数值型、字符、指针、数组等类型是可以比较的，而切片、`map`、函数等是不可比较的。
-
 - 请注意代码中 `println()` 和 `fmt.Println()` 的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
-
 - Go 语言中大多数数据类型都可以转化为有效的 `JSON` 文本，但 `channel`、`complex`、`func` 不行。[参考](https://go.dev/play/p/EPi1Y0YTNIn)
 
 ### 24. Other
 
-- 使用 `gofmt` 对代码进行格式化，使用 `goimports` 对 import 部分格式化，且运算符与操作数之间留有一个空格。
+- 格式化
+  - 使用 `gofmt` 对代码进行格式化
 
-- 优先使用 `strconv` 而不是 `fmt`。
+  - 使用 `goimports` 对 import 部分格式化，且运算符与操作数之间留有一个空格
 
-- 根据团队习惯，可将主要代码中的一行长度控制在 80-120 字符之间，超出的部分可以换行。文件长度最好不要超过 800 行，函数长度最好不要超过 80 行，否则考虑重构。
+  - 优先使用 `strconv` 而不是 `fmt`
 
-- 包名全部小写，不允许有大写或者下划线；项目名可以使用中划线连接多个单词；函数名要采用驼峰式；文件名要小写，并使用下划线分隔单词；结构体的命名要用驼峰式，且使用名词而不是动词；接口命名规则与结构体命名规则基本一致，单个函数的接口使用 “er” 结尾，两个函数以两个函数名命名，三个以上类似于结构体名。
+- 代码长度
+  - 函数参数不宜过长，应控制在 5 个以内
 
-- 每个可导出的命名都要有注释，禁止使用多行注释，注释掉的代码在提交前应该删除，否则说明不删的理由和后续处理建议，多段注释之间使用空格进行分隔。
+  - 可将主要代码中的一行长度控制在 80-120 字符之间，超出的部分可以换行
+
+  - 单个文件中代码行数最好不要超过 800 行
+
+  - 函数长度最好不要超过 80 行，否则考虑重构
+
+- 命名规则
+  - 包名全部小写，不允许有大写或者下划线
+
+  - 项目名可以使用中划线连接多个单词
+
+  - 函数名要采用驼峰式
+
+  - 文件名要小写，并使用下划线分隔单词
+
+  - 结构体的命名要用驼峰式，且使用名词而不是动词
+
+  - 接口命名规则与结构体命名规则基本一致，单个函数的接口使用 “er” 结尾，两个函数以两个函数名命名，三个以上类似于结构体名
+
+- 注释
+  - 每个可导出的命名都要有注释
+  - 禁止使用多行注释
+  - 多段注释之间使用空格进行分隔
+  - 注释掉的代码在提交前应该删除，否则说明不删的理由和后续处理建议
 
 ## Reference
 
