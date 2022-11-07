@@ -131,6 +131,13 @@ func test8() {
 	fmt.Println(s2)
 }
 
+func test9() {
+	s := []int{1, 2}
+	s = append(s, 4, 5, 6, 7)
+	fmt.Printf("len = %d, cap = %d", len(s), cap(s))
+	// 6 6
+}
+
 func main() {
 	test()
 	test1()
@@ -141,4 +148,5 @@ func main() {
 	test6()
 	test7()
 	test8()
+	test9()
 }

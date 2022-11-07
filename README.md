@@ -70,7 +70,7 @@ A bunch tips for Go.
 
 - `defer` 函数的参数（包括接收者）是在 `defer` 语句出现的位置做计算的，而不是在函数执行的时候计算的。即 `defer` 后面的函数如果带参数，会优先计算参数，并将结果存储在栈中，等到真正执行 `defer` 时取出。[参考 1](https://go.dev/play/p/9n-JMGhicmQ) [参考 2](https://go.dev/play/p/r_wvQjHDO8Q) [参考 3](https://go.dev/play/p/ZTrNCA8IclB) [参考 4](https://go.dev/play/p/LBr2jCRHmRU)
 
-- `return` 会先于 `defer` 返回，且 `return` 不是原子操作（`return` 语句分为赋值和返回两个部分）。因此，在有名返回函数中，一定要注意 `return` 语句。
+- `return` 会先于 `defer` 返回，且 `return` 不是原子操作（`return` 语句分为赋值和返回两个部分，命名返回值会被 `return` 后面的值覆盖掉 [参考](https://go.dev/play/p/igGUWZqHPTN)）。因此，在有名返回函数中，一定要注意 `return` 语句。
 
 - `defer` 语句在前，且包含 `recover()` 时，当遇到 `panic` 程序将停止执行，然后调用 `defer` 函数。[参考](https://go.dev/play/p/pTe1wUxn73P)
 
@@ -91,27 +91,14 @@ A bunch tips for Go.
 ### 3. loop
 
 - 善用 `switch` 而不是多个 `if`，且 `switch` 中必须要有 `default` 子句。
-
 - 在没有显示 `break` 的情况下，`switch` 中的 `case` 执行完会自动 `break`，若想继续执行下面的 `case`，可添加 `fallthrough` 关键字。[参考](https://go.dev/play/p/vfwgYe94fK_Y)
-
 - 在单独的 `for` 循环中，`break` 可以跳出循环。但在 `for select` 中，`break` 可以跳出 `select` 块，但不会跳出 `for` 循环。如需跳出 `for` 循环，可以配合 `goto` 使用 `label` 解决。
-
 - `for {}` 循环会独占 CPU 资源导致其他 goroutine 饿死，可以通过阻塞的方式避免 CPU 占用，如使用 `select {}`。[参考](https://go.dev/play/p/VgVSO6Edb_6)
-
 - `goto` 无法跳转到其他函数或者内层代码，禁止在业务代码中使用。[参考](https://go.dev/play/p/miz2pGthALx)
-
-- `select` 会随机选择一个可用通道做收发操作，而不是按顺序进行。[参考](https://go.dev/play/p/5tsektd4No-)
-
 - `for range` 中如果仅需要第一项，则丢弃第二个，如 `for key := range nums`；如果仅需要第二项，则第一项用下划线表示，如 `for _, val := range nums`。
-
-- 当使用 `for range` 遍历切片时，若只有一个参数，如 `for v := range x`，则 `v` 表示索引；若有两个参数，第二个参数才表示具体的值。[参考](https://go.dev/play/p/Zdu4XlgJLUI)
-
 - `for range` 使用短变量声明 `:=` 的形式迭代变量时，变量 `i`、`v` 在每次循环中都会被重用，而不是重新声明。[参考 1](https://go.dev/play/p/pPk92ad178b) [参考 2](https://go.dev/play/p/UghIn1HZ-l1)
-
 - 当 `range` 表达式发生复制时，副本的指针依旧指向原底层数组，所以对切片的修改都会反应到底层数组上。[参考](https://go.dev/play/p/mDjwzkSxTt1)
-
 - `for range` 中获取到的值是元素的副本，不会复制底层数组。[参考 1](https://go.dev/play/p/-YYOfIFYF2v) [参考 2](https://go.dev/play/p/R0oFiqzbKrj)
-
 - 循环次数在循环开始前就已经确定，循环内改变切片的长度，不影响循环次数。[参考](https://go.dev/play/p/I67nM8JFsPZ)
 
 ### 4. string
@@ -120,7 +107,7 @@ A bunch tips for Go.
 
 - Go 的字符串类型是不能赋值为 `nil` 的，也不能跟 `nil` 比较。[参考](https://go.dev/play/p/7B7wbztcwlr)
 
-- 如果一个类型实现了 `String()` 方法，那么在使用 `fmt.Printf()`、`fmt.Print()`、`fmt.Println()`、`fmt.Sprintf()` 等格式化输出方法时，会自动使用 `String()` 方法。因此，再次调用 `String()` 方法将导致递归调用。[参考](https://go.dev/play/p/8jOYDn0m2WY)
+- 如果一个类型实现了 `String()` 方法，那么在使用 `fmt.Printf()` 等格式化输出方法时，会自动使用 `String()` 方法。因此，再次调用 `String()` 方法将导致递归调用。[参考](https://go.dev/play/p/8jOYDn0m2WY)
 
 - 空字符串的判断应使用 `if len(s) == 0` 而不是 `if s == ""`。
 
@@ -135,22 +122,14 @@ A bunch tips for Go.
 ### 6. array & slice
 
 - 无法对 `nil` 切片进行赋值，会 `panic`。[参考](https://go.dev/play/p/9We3a-pUfXr)
-
 - 在函数调用里修改返回的切片，将会影响到原切片。通常我们新建一个切片，然后将修改后的结果复制到该新切片，而不是改变旧有切片。
-
-- 在拷贝切片时，`copy(dst, src)` 返回 `len(dst)`、`len(src)` 之间的最小值。如果想要将 `src` 完全拷贝至 `dst`，必须给 `dst` 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
-
+- 在拷贝切片时，`copy(dst, src)` 返回 `len(dst)`、`len(src)` 之间的最小值作为新内容的长度。如果想要将 `src` 完全拷贝至 `dst`，必须给 `dst` 分配足够的内存空间。[参考 1](https://mp.weixin.qq.com/s/3qguB_V6mwPl-G2q-TjnfA) [参考 2](https://go.dev/play/p/zEIuT1d18k0)
 - 从一个基础切片派生出的子切片的长度可能大于基础切片的长度。若基础切片是 `slice`，使用操作符 `[low:high]`，只要满足 `0 <= low <= high <= cap(slice)`，下标 `low` 和 `high` 都可以大于 `len(slice)`。若其中的 `high` 省略，且 `low < len(slice)`，则默认是截取到原切片的长度；若 `low > len(slice)`，则 `panic`。否则，截取之后的切片长度和容量分别为：`len = high-low`，`cap = cap(slice)-low`。[参考](https://go.dev/play/p/9aVps3541w9)
-
 - 使用 `make` 初始化切片时，需要补充 `len` 参数（`cap` 参数可选），否则无法编译（[参考](https://go.dev/play/p/xrKuOwRCQiU)）。当然，如果在能够确认的情况下，最好可以预先分配容量。
-
+- 字面量初始化切片时候，可以指定索引，没有指定索引的元素会在前一个索引基础之上加一。[参考](https://go.dev/play/p/_hUqp3DqucC)
 - `append()` 的第二个参数不能直接使用 `slice`，需使用 `...` 操作符来将一个切片追加到另一个切片上，或者直接跟上具体的元素。[参考](https://go.dev/play/p/lz7VtTQxQrl) 另外，尽量不要在复制时使用 `append()`，如在合并多个 slice 的时候。
-
 - 对于空切片的判断，应该写成 `if slice != nil && len(slice) == 0` 这种方式而不是 `if len(slice) == 0`。
-
 - 对切片截取后赋值给新的切片，则对新切片的修改会影响原来的切片，因为这两个切片共享同一个底层数组。而追加会新建一个切片，不会影响原有切片。[参考](https://go.dev/play/p/A0T0PVUWoUz)
-
-- 无法对指针进行 `append` 操作。
 
 ### 7. map
 
@@ -174,13 +153,11 @@ A bunch tips for Go.
 
 - 使用 `chan struct{}` 来传递信号，尽量避免使用 `chan bool`。
 
-- 无法关闭接收用的 `channel`，但可以关闭发送用的 `channel`。[参考](https://go.dev/play/p/sh0pUfwN5fy)
+- 读、写一个 `nil channel` 会造成永久阻塞；向已经关闭的 `channel` 发送数据，会造成 `panic`；从一个已经关闭的 `channel` 接收数据，如果缓冲区为空，则返回一个对应类型的零值，否则读取出对应的值；关闭一个已经关闭的 `channel` 会 `panic`。[参考](https://go.dev/play/p/h7NnRmXbtEA)
 
-- 读、写一个 `nil channel` 会造成永久阻塞；向已经关闭的 `channel` 发送数据，会造成 `panic`；从一个已经关闭的 `channel` 接收数据，如果缓冲区为空，则返回一个零值，否则读取出对应的值；关闭一个已经关闭的 `channel` 会 `panic`。[参考](https://go.dev/play/p/h7NnRmXbtEA)
+- 及时用 `close()` 关闭通道，否则可能会导致死锁。如在 `for range` 循环中遍历 `channel` 中的值时。
 
-- 及时用 `close()` 关闭通道，否则可能会导致死锁。如在 `for-range` 循环中遍历 `chan` 中的值时。
-
-- 不能在单向通道上做逆向操作，也不能用 `close` 函数关闭接收端（`<-chan`）。[参考](https://go.dev/play/p/UYJtCrteG_V)
+- 不能在单向通道上做逆向操作，也不能用 `close` 函数关闭接收端（`<-chan`），但可以关闭发送端。[参考](https://go.dev/play/p/UYJtCrteG_V)
 
 - `select` 语句会随机选择一个可用通道做收发操作，如要等全部通道消息处理结束(`closed`)，可将已完成通道设置为 `nil`，这样它就会被阻塞，不再被 `select` 选中。当所有通道都不可用时，`select` 会执行 `default` 语句，避开 `select` 阻塞，也可用 `default` 处理一些默认逻辑。
 
@@ -192,7 +169,7 @@ A bunch tips for Go.
 
 - 可变长参数作为函数的参数，传递的是指针，因此在函数内部修改可变长参数会修改原数据。[参考 1](https://go.dev/play/p/apu9JTmorrp) [参考 2](https://go.dev/play/p/NnGkzIPWDeD)
 
-- 如果想实现函数或者方法的链式调用，则返回该函数或者方法的指针值即可。
+- 如果想实现函数或者方法的链式调用，则返回该函数或者方法的指针值即可（不过这样会引起变量逃逸）。
 
 - 在函数有多个返回值时，只要有一个返回值是命名的，其他的也必须命名。如果有多个返回值，则必须加上括号 `()`；如果只有一个返回值且命名也必须加上括号 `()`。
 
@@ -201,24 +178,13 @@ A bunch tips for Go.
 ### 10. method
 
 - 使用值类型接收者定义的方法，调用的时候，使用的是值的副本，对副本操作不会影响原来的值。如果想要在调用函数中修改原来的值，可以使用指针接收者定义的方法。
-
 - **实现了接收者是值类型的方法，相当于自动实现了接收者是指针类型的方法；而实现了接收者是指针类型的方法，不会自动生成对应接收者是值类型的方法**。[参考](https://go.dev/play/p/UYla-H0C-0U)
-
 - 当使用 `type` 声明一个新类型时，它不会继承原有类型的方法集。
-
 - 非命名类型（`unamed type`，如 `struct{}`、`[]string`、`interface{}`、`map[string]bool` 等）不能作为方法的接收者。[参考](https://go.dev/play/p/Xbdnni_JasU)
-
 - 当目标方法的接收者是指针类型时，那么被复制的就是指针。[参考](https://go.dev/play/p/ttoONtuoHan)
-
-- 当指针值赋值给变量或者作为函数参数传递时，会立即计算并复制该方法执行所需的接收者对象并与其绑定，以便在稍后执行时能隐式传入接收者参数。[参考](https://go.dev/play/p/-n9RfLyVWVX)
-
 - 在方法中，指针类型的接收者必须是合法指针（包括 `nil`），或者能够获取到实例地址的表达式。[参考](https://go.dev/play/p/kW1kZeZMWBF)
-
 - 不可寻址的结构体不能调用带结构体指针接收者的方法，但可以调用值接收者的方法。[参考](https://go.dev/play/p/OibZeTvBQJF)
-
 - 基于类型创建的方法必须定义在同一个包内，或者定义该类型的一个新类型。[参考 1](https://go.dev/play/p/u5fYzh-7b72) [参考 2](https://go.dev/play/p/gWdbC0S_Z-d)
-
-- 不能使用多级指针调用方法。[参考](https://go.dev/play/p/peYgi0z2i33)
 
 ### 11. interface
 
@@ -234,7 +200,7 @@ A bunch tips for Go.
 
 - `interface{}` 作为函数参数时，可以接收任何类型的参数，包括用户自定义的类型以及指针类型，但不要使用 `*interface{}`。[参考](https://go.dev/play/p/9Ekk_CUlYdI)
 
-- 将小整数转换为接口值不再需要进行内存分配(小整数是指 0 到 255 之间的数)。因此，一般来说接口意味着必须在堆中动态分配。
+- 将小整数转换为接口值不再需要进行内存分配（小整数是指 0 到 255 之间的数）。因此，一般来说接口意味着必须在堆中动态分配。
 
 - 仅有接口类型的变量才能使用类型断言。[参考](https://go.dev/play/p/dGLVU2XEz5R)
 
@@ -261,28 +227,27 @@ A bunch tips for Go.
 ### 13. goroutine
 
 - 在未进行并发控制的代码中，如果存在多处 goroutine，则他们的运行顺序是不确定的。[参考](https://go.dev/play/p/07mnc88nAzD)
+- 如果你不知道该如何关闭 goroutine，则不要使用它们。
 
 ### 14. context
 
 - 不要将 `context` 放到结构体中，而是直接将 `context` 类型作为函数的第一参数，并且命名为 `ctx`。
 
-- 不要向函数传入一个 `nil` 的 `context`，如果你实在不知道传什么，标准库给你准备好了一个 `context：TODO`。
+- 不要向函数传入一个 `nil` 的 `context`，如果你实在不知道传什么，则用 `context.TODO()`。
 
-- 不要把本应该作为函数参数的类型塞到 `context` 中，`context` 存储的应该是一些共同的数据。例如：登陆的 session、cookie 等。
+- 不要把本应该作为函数参数的类型塞到 `context` 中，`context` 存储的应该是一些共同的数据。例如登陆的 session、cookie 等。
 
-- `context` 是并发安全的，因此，同一个 `context` 可以被传递到多个 goroutine 中。
+- `context` 是天然并发安全的。因此，同一个 `context` 可以被传递到多个 goroutine 中。
 
 ### 15. lock
 
 - 对变量加锁后再进行复制，会将锁的状态一同复制。
 
-- 将 `Mutex` 作为匿名字段时，相关的方法必须使用指针接收者，否则会导致锁机制失效。也可以通过嵌入 `*Mutex` 来避免复制的问题，但需要初始化。[参考](https://go.dev/play/p/iL0qUgiiggH)
+- **将 `Mutex` 作为匿名字段时，相关的方法必须使用指针接收者，否则会导致锁机制失效。也可以通过嵌入 `*Mutex` 来避免复制的问题，但需要初始化**。[参考](https://go.dev/play/p/iL0qUgiiggH)
 
 - 读写锁的存在是为了解决读多写少时的性能问题，读场景较多时，读写锁可有效地减少锁阻塞的时间。
 
 ### 16. init
-
-- `init()` 函数不能被其他函数调用，包括 `main()` 函数，它总是第一个执行。
 
 - `init()` 函数在代码中不能被显示调用、不能被引用（赋值给函数变量），否则出现编译错误。
 
@@ -305,16 +270,12 @@ A bunch tips for Go.
 ### 19. pointer
 
 - 不能使用多级指针调用方法。[参考](https://go.dev/play/p/L6jl8KpI2D7)
-
 - 只要有一个指针指向一个引用的变量，那么这个变量就不会被释放。因此，在 Go 语言中返回函数参数或临时变量是安全的。
-
 - 对空指针解引用会造成 `panic`。[参考](https://go.dev/play/p/MHb9socpfdk)
-
 - 指针不支持索引。[参考](https://go.dev/play/p/5tsektd4No-)
-
 - 永远不要使用一个指针指向一个接口类型，因为它已经是一个指针。
-
 - `new` 一个对象，返回的是该对象的指针类型，不能对指针执行 `append()` 操作。[参考](https://go.dev/play/p/8g8BLBNHH4b)
+- 当指针值赋值给变量或者作为函数参数传递时，会立即计算并复制该方法执行所需的接收者对象并与其绑定，以便在稍后执行时能隐式传入接收者参数。[参考](https://go.dev/play/p/-n9RfLyVWVX)
 
 ### 20. operator
 
@@ -343,43 +304,21 @@ A bunch tips for Go.
 ### 23. misc
 
 - Go 中仅有值传递。
-
 - `%+d` 表示输出数值的符号。[参考](https://go.dev/play/p/MJjQAexpHV7)
-
 - 两个不同类型的数值不能相加，否则会编译报错。[参考](https://go.dev/play/p/DehdvmqOjtc)
-
-- 解引用空指针会 `panic`。
-
 - Go 中不同类型是不能比较的（比如长度不同的两个数组），切片也是不能进行比较的。[参考](https://go.dev/play/p/hgAuoeiYg57)
-
-- 类型转换、类型断言本质上都是把一个类型转换成另外一个，但类型断言是对接口变量进行的操作。
-
-- 注意区分类型别名（有 `=`）和新建类型（无 `=`）的区别，前者和原类型一致，拥有原类型实现的方法，而后者是新的类型。[参考](https://go.dev/play/p/BxQsLa-zhnh)
-
-- Go 语言中不存在引用变量，每个变量都占用一个唯一的内存位置。
-
-- 命名返回值会被 `return` 后面的值覆盖掉。[参考](https://go.dev/play/p/igGUWZqHPTN)
-
-- Go 中的预定义标识符（如 `string`、`len` 等）是可以作为变量使用的，但关键字不行（如 `default`）。
-
-- 用字面量初始化数组、`slice` 和 `map` 时，最好是在每个元素后面加上逗号。[参考](https://go.dev/play/p/D9v3aFCTRL0)
-
-- 字面量初始化切片时候，可以指定索引，没有指定索引的元素会在前一个索引基础之上加一。[参考](https://go.dev/play/p/_hUqp3DqucC)
-
-- `cap()` 函数适用于数组、数组指针、`slice` 和 `channel`，不适用于 `map`，可以使用 `len()` 返回 `map` 的元素个数。当使用 `make` 创建 `map` 变量时指定第二个参数会被忽略。
-
-- 如果有未使用的变量，代码将编译失败，但可以有未使用的全局变量。另外，函数的参数未使用也是可以的。当然，如无必要，可以注释掉或者移除未使用的变量。[参考](https://go.dev/play/p/xYxO9jOJNYg)
-
-- Go 语言中，大括号不能放在单独的一行，否则会编译错误。
-
-- Go 中存在断行规则，请在 `;` 之后断行。[参考](https://gfw.go101.org/article/line-break-rules.html)
-
 - 常见的 `bool`、数值型、字符、指针、数组等类型是可以比较的，而切片、`map`、函数等是不可比较的。
-
+- 类型转换、类型断言本质上都是把一个类型转换成另外一个，但类型断言是对接口变量进行的操作。
+- 注意区分类型别名（有 `=`）和新建类型（无 `=`）的区别.前者和原类型一致，拥有原类型实现的方法，而后者是新的类型。[参考](https://go.dev/play/p/BxQsLa-zhnh)
+- Go 语言中不存在引用变量，每个变量都占用一个唯一的内存位置。
+- Go 中的预定义标识符（如 `string`、`len` 等）是可以作为变量使用的，但关键字不行（如 `default`）。
+- 用字面量初始化数组、`slice` 和 `map` 时，最好是在每个元素后面加上逗号。[参考](https://go.dev/play/p/D9v3aFCTRL0)
+- `cap()` 函数适用于数组、数组指针、`slice` 和 `channel`，不适用于 `map`，可以使用 `len()` 返回 `map` 的元素个数。当使用 `make` 创建 `map` 变量时指定第二个参数会被忽略。
+- 如果有未使用的变量，代码将编译失败，但可以有未使用的全局变量。另外，函数的参数未使用也是可以的。当然，如无必要，可以注释掉或者移除未使用的变量。[参考](https://go.dev/play/p/xYxO9jOJNYg)
+- Go 语言中，大括号不能放在单独的一行，否则会编译错误。
+- Go 中存在断行规则，请在 `;` 之后断行。[参考](https://gfw.go101.org/article/line-break-rules.html)
 - 请注意代码中 `println()` 和 `fmt.Println()` 的区别，后者会使得变量逃逸。[参考](https://go.dev/play/p/PNLMlw2nHn4)
-
 - Go 语言中大多数数据类型都可以转化为有效的 `JSON` 文本，但 `channel`、`complex`、`func` 不行。[参考](https://go.dev/play/p/EPi1Y0YTNIn)
-
 - 一个类型确定数字型常量所表示的值是不能溢出它的类型的表示范围的。一个类型不确定数字型常量所表示的值是可以溢出它的默认类型的表示范围的。当一个类型不确定数字常量值溢出它的默认类型的表示范围时，此数值不会被截断。
 
 ### 24. Other
